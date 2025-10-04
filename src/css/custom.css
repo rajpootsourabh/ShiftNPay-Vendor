@@ -1,0 +1,741 @@
+#root{
+    background: #f6f6f6;
+}
+/* Create 7 equal columns */
+
+
+
+#sidebar-wrapper {
+    z-index: 1000;
+    top: 0;
+    left: 0;
+    overflow-y: auto;
+    transition: all 0.3s;
+    position: fixed;
+    width: 250px;
+    background: white;
+    height: 100vh;
+}
+
+#content-wrapper {
+    margin-left: 250px;
+    width: calc(100% - 250px);
+}
+.side-Heading img {
+    max-width: 165px;
+    margin: auto;
+}
+#sidebar-wrapper .nav .nav-active{
+background-color: #108a00;
+}
+.btn-active{
+    background-color: #108a00;
+    color: white; 
+}
+#sidebar-wrapper svg{
+    width: 26px;
+    height: 26px;
+}
+.visit-website-btn{
+    padding: 10px;
+    background: #108a00;
+    border-radius: 25px;
+    color: white;
+    font-weight: bold;
+
+}
+.font-weight-bold{
+    font-weight: Bold !important;
+}
+.members-section{
+    height: 150px;
+    display: flex;
+    justify-content: center;
+    flex-direction: column;
+    text-align: center;
+}
+.icon-wrapper {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 70px; /* Adjust the size as needed */
+    height: 70px; /* Adjust the size as needed */
+    background-color: #f5f5f5; /* Background circle color */
+    border-radius: 50%;
+    border: 1px solid; /* Border color and width */
+  }
+  
+  .icon-wrapper svg {
+    width: 35px; /* Adjust the SVG size */
+    height: 35px; /* Adjust the SVG size */
+  }
+  .members-section p{
+    font-size: 26px;
+    padding-top: 10px;
+  }
+  .member-database .deleteBtn {
+    background: #108a00;
+    border-radius: 25px;
+    color: white;
+    font-weight: bold;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  .member-database .deleteBtn svg{
+    margin-right: 5px;
+    font-weight: bolder;
+  }
+  .member-database .scrolldiv {
+    max-height: 573px;
+    min-height: 573px;
+    overflow-y: scroll;
+}
+
+  /* Sidebar.css */
+  .sidebar .nav-link {
+    text-decoration: none;
+    color: Black !important; /* Default color */
+    border-radius: 0px;
+    border-radius: 0px;
+}
+
+.sidebar .nav-link:hover, .sidebar .activeBtn {
+    background-color:  #108a00 !important; /* Hover color */
+    color: white !important;
+}
+.nav-link .active:focus, .nav-link .active:hover {
+    color: white !important;
+}
+.sidebar{
+  top: 0px;
+    z-index: 99999;
+}
+.activeTextBtn{
+    background: #108a00 !important;
+    border-radius: 25px !important;
+    color: white !important;
+    font-weight: bold;
+    margin-top: 12px;
+}
+.normalBtn{
+    background: #108a00 !important;
+    color: white !important;
+    text-decoration: none !important;
+}
+.normalBtn:after{
+ display: none !important;
+}
+
+.table-container {
+  padding: 20px;
+  background-color: #f9f9f9;
+}
+
+.search-bar {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.search-bar input, .search-bar select, .search-bar button {
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+}
+
+.search-bar button {
+  background-color: #28a745;
+  color: white;
+  border: none;
+  cursor: pointer;
+}
+
+.search-bar button:hover {
+  background-color: #1f8a34;
+}
+.defaultBtnColor{
+  background-color: #1f8a34 !important;
+  border:none !important;
+}
+.custom-table {
+  width: 100%;
+  border-collapse: collapse;
+  background-color: white;
+  border-radius: 10px;
+  border: 1px solid #e0e0e0;
+}
+
+ul.pagination {
+  background: #f6f6f6;
+  margin-bottom: 0px;
+}
+
+.custom-table th, .custom-table tr {
+  padding: 20px;
+  border-bottom: 1px solid #e0e0e0;
+  text-align: left;
+  font-weight: 500;
+}
+
+ .custom-table tbody tr {
+    height :150px;
+}
+.status {
+  display: flex;
+  align-items: center;
+}
+
+.avatar {
+    width: 50px;
+    height: 50px;
+  border-radius: 50%;
+  margin-right: 10px;
+}
+
+.status-label {
+  padding: 5px 10px;
+  border-radius: 20px;
+}
+
+.status-label.active {
+  background-color: #28a745;
+  color: white;
+}
+
+.actions {
+  position: relative;
+}
+
+.actions-button {
+  background-color: white;
+  border: 1px solid #ccc;
+  padding: 5px 10px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+}
+
+.actions-button:hover {
+  background-color: #f0f0f0;
+}
+
+.arrow-icon {
+  margin-left: 5px;
+}
+
+.dropdown-menu {
+  display: none;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  background-color: white;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  border-radius: 5px;
+  overflow: hidden;
+  margin-top: 5px;
+  z-index: 100;
+}
+
+.actions:hover .dropdown-menu {
+  display: block;
+}
+
+.custom-table .dropdown-menu li {
+  padding: 10px 15px;
+  cursor: pointer;
+}
+
+.custom-table .dropdown-menu li:hover {
+  background-color: #f0f0f0;
+}
+
+.delete-account {
+  color: #dc3545;
+}
+
+.delete-account:hover {
+  background-color: #f8d7da;
+}
+.actionDropDown{
+    width: 400px;
+    left: -256px;
+    position: absolute;
+    top: 43px;
+    background: #f7f7f7;
+}
+.subscriptionTable .actionDropDown  ,.CategroiesTable .actionDropDown {
+  top: 59px;
+    width: 158px;
+    left: -17px;
+}
+.custom-table.timetracker tr{
+  height: 60px !important;
+  
+}
+.cursor-pointer{
+    cursor: pointer !important;
+}
+
+.custom-table.timetracker tbody tr td{
+  padding: 20px;
+  border-bottom: 1px solid #e0e0e0;
+  text-align: left;
+  font-weight: 500;
+}
+.vendor-icon {
+  background-color: #00b300;
+  border-radius: 51%;
+  padding: 10px;
+  display: flex;
+  position: absolute;
+  width: 150px;
+  height: 111px;
+  right: -58px;
+  top: 31px;
+  }
+  
+  .vendor-icon svg {
+    width: 30px;
+    height: 30px;
+    margin-top: 19px;
+    margin-left: 19px;
+  }
+
+  .pagination{
+    justify-content: center;
+    padding: 27px;
+  }
+  .page-item .page-link{
+    color: black !important;
+  }
+  .page-item.active .page-link {
+    background: #28a745 !important;
+    border-color: #28a745 !important;
+    color: white !important;
+
+  }
+
+
+  @media (min-width: 992px) {
+    .navbar-vertical.navbar-expand-lg~.navbar-top {
+        padding-right: 2.5rem !important;
+    }
+}
+
+
+.sidebar .nav-item-wrapper{
+  height: 50px;
+}
+.sidebar .nav-item-wrapper a{
+  align-items: center;
+  display: flex;
+  margin: 0px;
+  border-radius: 0px;
+}
+.subscriptionTable .pHeading{
+  color: #264966;
+}
+.subscriptionTable .membersCount ,.CategroiesTable .membersCount {
+  width: 60px;
+  height: 40px;
+  border: 1px solid #cadce5;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: #f2f4f5;
+  font-size: 21px;
+}
+.subscriptionTable .postPublishing{
+  border: 1px solid #cadce5;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: #f2f4f5;
+  font-size: 12px;
+  font-weight: normal;
+  padding: 10px 5px;
+  WIDTH: 120px;
+}
+p{
+  color: #484747;
+  /* font-weight: 500; */
+}
+.defaultBtn{
+  background: green;
+    padding: 9px 5px;
+    color: white;
+    text-align: center;
+}
+.subscriptionTable .pricingDiv{
+  width: 145px;
+  font-size: 14px;
+}
+.subMenuList{
+  padding: 8px;
+    background: #f6f6f6;
+}
+.subMenuList a {
+  color: #108a00 !important;
+  text-decoration: none;
+  font-size: 15px;
+}
+.ck-editor__editable_inline {
+  min-height: 400px;
+}
+.card.border-bottom-0.rounded-0.border-top-green {
+  border-top: 4px solid green;
+}
+.revenueTable .actionDropDown {
+  width: 180px;
+  left: -38px;
+  position: absolute;
+  top: 59px;
+  background: #f7f7f7;
+}
+.custom-table.CategroiesTable tbody tr {
+  height: 100px !important;
+}
+.accordion .card{
+  border-radius:0px;
+}
+button.accordion-button.collapsed.btn.btn-link {
+  box-shadow: none;
+  background: transparent;
+}
+.accordion .mainCatBtn{
+  width: 100% !important;
+  padding: 6px !important;
+  text-decoration: none !important;
+  text-transform: capitalize !important;
+}
+
+.accordion-button::after{
+  display: none !important;
+}
+.normal{
+  text-decoration: none !important;
+}
+.sub-sub-categories-btn-div{
+  display: flex;
+    justify-content: end;
+    gap: 10px;
+}
+.pl-0{
+  padding-left: 0px !important;
+}
+.custom-modal .modal-content{
+  min-width: 700px;
+  margin: auto;
+}
+
+.custom-view-modal .modal-content {
+  border-radius: 10px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+}
+
+.custom-view-modal .modal-header {
+  background-color: #f8f9fa;
+  border-bottom: 1px solid #dee2e6;
+}
+
+.custom-view-modal .modal-footer {
+  border-top: 1px solid #dee2e6;
+}
+
+.custom-view-modal .modal-body p {
+  font-size: 16px;
+  color: #495057;
+}
+
+.custom-view-modal .modal-body a {
+  color: #007bff;
+  text-decoration: none;
+}
+
+.custom-view-modal .modal-body a:hover {
+  text-decoration: underline;
+}
+.form-container {
+  max-width: 800px;
+  margin: auto;
+  border: 1px solid #e3e3e3;
+  border-radius: 5px;
+  background-color: #f8f9fa;
+}
+
+.upload-box {
+  border: 2px dashed #ced4da;
+  border-radius: 5px;
+  padding: 2px;
+  text-align: center;
+  cursor: pointer;
+  position: relative;
+} 
+.upload-box svg{
+  position: absolute;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    top: 50%;
+}
+.upload-box input:before{
+  content: 'Upload';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 5px;
+  background-color: rgba(0, 123, 255, 0.1); /* Light blue overlay */
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+input:-webkit-autofill {
+  -webkit-box-shadow: 0 0 0px 1000px white inset;
+  box-shadow: 0 0 0px 1000px white inset;
+  -webkit-text-fill-color: #000 !important;
+}
+.svg-inline--fa {
+  display: var(--fa-display, inline-block);
+  height: 1em;
+  overflow: visible;
+  vertical-align: -.125em;
+}
+.notificationCount{
+  position: absolute;
+    top: 16px;
+    left: 22px;
+    border: 1px solid white;
+    border-radius: 13px;
+    width: 20px;
+    height: 20px;
+    text-align: center;
+    background: green;
+    color: white;
+}
+.bellIconInList {
+  display: flex;
+    justify-content: center;
+    align-items: center;
+    border: 1px solid #000;
+}
+.notification a{
+    color: black;
+    text-decoration: none;
+}
+.pl-44{
+  padding-left: 44px;
+}
+.document-action svg{
+  cursor: pointer;
+}
+.f15{
+  font-size: 15px;
+}
+.upload-section {
+  background-color: #f8f9fa !important;
+  border: 2px dashed #28a745 !important;
+}
+.iconShane{
+  border-radius: 20px;
+  overflow: hidden;
+}
+.text-justify{
+  text-align: justify;
+}
+.checkListMenu div p.active {
+  border-top-left-radius: 12px;
+  border-top-right-radius: 12px;
+  background: green;
+  color: white !important;
+}
+.checkListBtn{
+  background: #f0feed;
+  color: #108a01;
+  width: 140px;
+  border: 2px solid #108a01;
+  border-radius: 19px;
+  padding: 9px;
+  font-weight: bolder;
+  line-height: 13px;
+}
+
+.custom-checkbox {
+  display: none;
+}
+
+/* Style the label to contain the custom checkbox */
+.custom-checkbox-label {
+  position: relative;
+  display: flex;
+  align-items: center;
+  padding-left: 30px; /* Space for the custom checkbox */
+  cursor: pointer;
+}
+
+/* Style the custom checkbox appearance */
+.custom-checkbox-icon {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 24px;
+  height: 24px;
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-image: url('data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"%3E%3Cpath d="M21 7L9 19l-5-5L3 12l6 6L21 5z" fill="%23d3d3d3"%3E%3C/path%3E%3C/svg%3E'); /* Default SVG icon */
+}
+
+/* Change SVG when checkbox is checked */
+.custom-checkbox-icon.checked {
+  background-image: url('data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"%3E%3Cpath d="M21 7L9 19l-5-5L3 12l6 6L21 5z" fill="%234caf50"%3E%3C/path%3E%3C/svg%3E'); /* Checked SVG icon */
+}
+
+.addEmployee .customHeading{
+  display: flex;
+    padding: 10px 20px;
+    background: lightgray;
+}
+.customToolTip{
+  position: absolute;
+  border: 1px solid green;
+  background: green;
+  width: 20px;
+  height: 20px;
+  text-align: center;
+  color: white;
+  line-height: 20px;
+  border-radius: 50%;
+  font-size: 11px;
+  top: 17px;
+  left: 125px;
+}
+
+.custom-checkbox {
+  display: flex;
+  align-items: center;
+}
+
+.custom-checkbox input[type="checkbox"] {
+  /* Hide the default checkbox */
+  display: none;
+}
+
+.custom-checkbox label {
+  display: inline-block;
+  width: 24px;
+  height: 24px;
+  background-color: #ccc; /* Default background */
+  border-radius: 50%;
+  position: relative;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+/* Green background and white checkmark when checkbox is checked */
+.custom-checkbox input[type="checkbox"]:checked + label {
+  background-color: #28a745; /* Green color */
+}
+
+.custom-checkbox label::after {
+  content: "";
+  position: absolute;
+  top: 45%;
+  left: 50%;
+  width: 6px;
+  height: 10px;
+  border: solid white;
+  border-width: 0 2px 2px 0;
+  transform: translate(-50%, -50%) rotate(45deg);
+  display: none;
+}
+
+.custom-checkbox input[type="checkbox"]:checked + label::after {
+  display: block;
+}
+
+.stat-card {
+  border-radius: 12px;
+  transition: transform 0.2s;
+}
+
+.stat-card:hover {
+  transform: translateY(-2px);
+}
+
+.icon-container {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.bg-primary-light {
+  background-color: #EDEAFF;
+}
+
+.bg-warning-light {
+  background-color: #FFF7E5;
+}
+
+.bg-success-light {
+  background-color: #EBFDF1;
+}
+
+.text-primary {
+  color: #8A4FFF;
+}
+
+.text-warning {
+  color: #FFA726;
+}
+
+.text-success {
+  color: #2ECC71;
+}
+
+.table-light th {
+  background-color: #f8f9fa;
+}
+
+.card {
+  border-radius: 12px;
+}
+.bg-primary{
+  background: #CFE4E9 !important;
+}
+.bg-primary-light{
+  background: #F2F9FA !important;
+}
+.bg-light-red{
+  background-color: #fef2f2;
+}
+.user-icon{
+  width: 30px;
+    height: 30px;
+    text-align: center;
+    background: white;
+    border: 1px solid lightgray;
+    border-radius: 21px;
+}
+.f11{
+  font-size: 12px;
+}
+.f14{
+  font-size: 14px;
+}
+.f17{
+  font-size: 17px;
+}
+.flex-1{
+  flex: 1;
+}
+.bg-green{
+  background-color: #00b300;
+}
+.bg-light-green{
+  background-color: #e7ffe4;
+}

@@ -1,0 +1,63 @@
+.fc-button-group button.fc-dayGridMonth-button,
+ .fc-button-group button.fc-timeGridWeek-button {
+    display: none;
+}
+
+
+/* .fc-day-duration {
+  margin-top: 0px;
+  font-size: 1em;
+  color: #666;
+} */
+
+.fc-dayGridMonth-view a {
+    color: inherit;
+    text-decoration: inherit;
+}
+
+.fc-day-duration {
+    margin-top: 5px;
+    font-size: 1em;
+    color: #666;
+  }
+  fc .fc-timegrid-event-harness {
+    min-height: 100px;
+    /* Set a minimum height for the event harness */
+    height: auto !important;
+  }
+  
+  .fc .fc-timegrid-event-harness:hover {
+    z-index: 5 !important;
+  }
+  
+  .fc .fc-timegrid-event {
+    height: auto !important;
+    /* Ensure event adapts to content */
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    background-color: lightgray !important;
+    border: none !important;
+  }
+  
+  .fc .fc-timegrid-slot {
+    min-height: 100px;
+    /* Ensure slot adapts to content */
+  
+  }
+  
+  .fc-scrollgrid-sync-inner {
+    height: auto !important;
+    min-height: 100px;
+    /* Adjust as necessary */
+  
+  }
+  
+  .fc .fc-timegrid-event-harness>a {
+    height: 100% !important;
+  
+  }
+  
+  .fc-button.fc-button-primary {
+    text-transform: none !important; /* Ensure no additional transformations are applied */
+  }

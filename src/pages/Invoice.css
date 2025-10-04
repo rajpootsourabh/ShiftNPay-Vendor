@@ -1,0 +1,119 @@
+.invoice-container {
+  color:#51555f !important;
+  .logo {
+    width: 130px;
+    background: #ffead5;
+    padding: 11px;
+    border-radius: 7px;
+  }
+  .vendorDetail {
+    list-style: none;
+    font-size: 14px;
+    padding-left: 14px;
+  }
+  .nameHeading {
+    font-size: 16px;
+    padding-bottom: 4px;
+  }
+  .normalHeading {
+    font-size: 13px;
+    color: #aaafba;
+  }
+  .amountDiv {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    text-align: right;
+    align-items: end;
+
+    .billNo {
+      width: 150px;
+      background: #f4f5f7;
+      padding: 8px;
+      border-radius: 11px;
+      text-align: center;
+    }
+    h5 {
+      font-size: 23px;
+      font-weight: bold;
+    }
+  }
+  .bg-grey {
+    background: #fafafa;
+  }
+  .p-20 {
+    padding: 20px;
+  }
+  .table .thead-light th {
+    color: #aaafba;
+    background-color: #fafafa;
+    font-size: 13px;
+    font-weight: 400;
+    text-transform: uppercase;
+  }
+  tbody{
+    font-size: 14px;
+    tr{
+      vertical-align: middle;
+      td{
+        height: 90px;
+      }
+    }
+    
+  }
+  
+}
+.f-14{
+  font-size: 14px !important;
+}
+
+.editButton{
+  font-size: 28px;
+  position: absolute;
+  top: 0px;
+  cursor: pointer;
+  right: 0px;
+}
+.inputNumber{
+  display: inline;
+  width: 70px;
+  border-color: lightgray;
+  border: 1px solid lightgray;
+  padding: 0px 6px;
+  text-align: right;
+}
+::-webkit-inner-spin-button {
+  display: none !important;
+}
+
+/* Loader.css */
+.loader-overlay {
+  position: fixed; /* Ensure it overlays everything */
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5); /* Semi-transparent background */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000; /* Ensure it's on top */
+}
+
+.spinner {
+  width: 50px;
+  height: 50px;
+  border: 4px solid #fff;
+  border-top: 4px solid #3498db; /* Blue spinner */
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}

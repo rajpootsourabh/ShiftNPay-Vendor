@@ -1,0 +1,17 @@
+.fs-9 {
+    font-size: .8rem !important;
+}
+.bellIconInList {
+    align-items: center;
+    border: 1px solid #000;
+    display: flex
+;
+    justify-content: center;
+}
+.bg-gray-100 {
+    --tw-bg-opacity: 1;
+    background-color: rgb(243 244 246 / var(--tw-bg-opacity));
+}
+.mainStartDiv {
+    margin: 23px -7px 0px 7px;
+}

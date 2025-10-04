@@ -1,0 +1,114 @@
+/* .fc-event-duration {
+    margin-top: 5px;
+    font-size: 0.8em;
+    color: #666;
+} */
+
+
+/* .fc-day-duration {
+    margin-top: 0px;
+    font-size: 1em;
+    color: #666;
+} */
+
+/* .fc-day-duration {
+    margin-top: 5px;
+    font-size: 1em;
+    color: #666;
+} */
+
+/* .fc .fc-daygrid-day-number {
+    color: #007bff;
+    font-weight: bold;
+}
+
+.fc .fc-daygrid-day-frame {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+}
+
+.fc .fc-event {
+    background-color: #e0e0e0 !important;
+    border: none;
+    border-radius: 4px;
+    padding: 4px;
+    color: #000;
+}
+
+.fc .fc-daygrid-event {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+} */
+/* .fc .fc-event {
+    background-color: #e0e0e0 !important;
+    border: none;
+    border-radius: 4px;
+    padding: 4px;
+    color: #000;
+    margin-bottom: 4px; 
+    overflow: hidden; 
+    white-space: nowrap; 
+}
+
+.fc .fc-daygrid-event {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.fc-timegrid-event {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+    white-space: nowrap;
+} */
+
+/* Ensure event container heights are managed */
+.fc .fc-timegrid-event-harness {
+    min-height: 100px;
+    /* Set a minimum height for the event harness */
+    height: auto !important;
+}
+
+.fc .fc-timegrid-event-harness:hover {
+    z-index: 5 !important;
+}
+
+.fc .fc-timegrid-event {
+    height: auto !important;
+    /* Ensure event adapts to content */
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    background-color: lightgray !important;
+    border: none !important;
+}
+
+.fc .fc-timegrid-slot {
+    min-height: 100px;
+    /* Ensure slot adapts to content */
+
+}
+
+.fc-scrollgrid-sync-inner {
+    height: auto !important;
+    min-height: 100px;
+    /* Adjust as necessary */
+
+}
+
+.fc .fc-timegrid-event-harness>a {
+    height: 100% !important;
+
+}
+
+.fc-button.fc-button-primary {
+    text-transform: capitalize /* Ensure no additional transformations are applied */
+}

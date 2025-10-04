@@ -1,0 +1,116 @@
+.shift-schedule{
+    border: 1px solid lightgray;
+    border-radius: 20px;
+    background: #faf8fc;
+    overflow: hidden;
+    .col{
+      min-height: 80px;
+      border-right: 1px solid lightgray;
+      gap: 5px;
+      display: flex;
+      flex-direction: column;
+    }
+}
+
+.switchOuterDiv{
+  display: flex;
+  font-size: 10px;
+  cursor: pointer;
+  background: #ede9f5;
+  padding: 4px;
+  border-radius: 14px;
+}
+
+.btn1 {
+  display: flex;
+  width: 50%;
+  justify-content: flex-end;
+  padding: 5px;
+}
+.btn1.off {
+  color: gray;
+}
+.btn1.on {
+  background: white;
+  border-radius: 30px;
+  font-weight: bold;
+}
+.switchOuterDiv .btn1 span {
+  padding-right: 4px;
+}
+.singleFilter{
+  padding: 5px;
+  text-align: right;
+  margin: auto;
+}
+.FirstLettersIcon {
+  width: 25px;
+  display: inline-block;
+  height: 25px;
+  background: #ede9f5;
+  text-align: center;
+  line-height: 26px;
+  color: #639ea9;
+  border-radius: 38%;
+  font-size: 12px;
+  margin-right: 4px;
+}
+.userInfo > div{
+  display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      gap: 2px;
+      padding: 2px 8px;
+      font-size: 12px;
+}
+.userInfo.card.d-flex {
+  min-height: 100px;
+}
+.userInfo{
+  background: #ffffff;
+}
+.shift-col .card{
+  background-color: #cfe4e9;
+  font-size: 12px;
+  padding: 10px;
+
+  .timing{
+    font-weight: bold;
+  }
+}
+
+.calender-info-section p {
+  font-size: 10px;
+  margin: 0px;
+  text-align: left;
+  font-weight: bold;
+ 
+}
+.calender-info-section  button {
+  font-size: 10px;
+  border-radius: 11px;
+  line-height: 15px;
+  height: 21px;
+}
+
+.job-names {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 5px 0;
+}
+
+.job-badge {
+  background-color: #e9ecef;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 12px;
+  color: #495057;
+}
+
+/* Job name in shift card */
+.card .job-name {
+  font-size: 12px;
+  color: #6c757d;
+  margin-top: 4px;
+}

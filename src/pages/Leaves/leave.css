@@ -1,0 +1,39 @@
+.leave-box {
+    border-radius: 8px;
+    padding: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    color: white;
+  }
+  
+  .leave-box.green {
+    background-color: #28a745;
+  }
+  
+  .leave-box.orange {
+    background-color: #fd7e14;
+  }
+  
+  .leave-box-icon {
+    font-size: 24px;
+  }
+  
+  .badge-approved {
+    background-color: #28a745;
+    color: white;
+  }
+  
+  .badge-pending {
+    background-color: #fd7e14;
+    color: white;
+  }
+  
+  .table-section {
+    margin-top: 20px;
+  }
+  
+  .table-header {
+    background-color: #f1f3f5;
+  }
+  

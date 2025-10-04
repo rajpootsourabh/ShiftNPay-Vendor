@@ -1,0 +1,144 @@
+.App {
+  text-align: center;
+}
+
+.App-logo {
+  height: 40vmin;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .App-logo {
+    animation: App-logo-spin infinite 20s linear;
+  }
+}
+
+.App-header {
+  background-color: #282c34;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: calc(10px + 2vmin);
+  color: white;
+}
+
+.App-link {
+  color: #61dafb;
+}
+
+@keyframes App-logo-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+body {
+  font-family: 'Poppins', sans-serif;
+}
+
+/* Job Assignment Modal Styles */
+.job-assignment-modal .modal-content {
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.job-assignment-modal .modal-header {
+  border-bottom: none;
+  padding: 1rem 1.5rem;
+}
+
+.job-assignment-modal .modal-body {
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+.job-card {
+  transition: all 0.2s ease;
+}
+
+.job-card:hover {
+  background-color: #f8f9fa;
+}
+
+.job-badge {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.detail-item {
+  display: flex;
+}
+
+.detail-label {
+  font-weight: 600;
+  min-width: 100px;
+  color: #495057;
+}
+
+.detail-value {
+  margin-left: 0.5rem;
+}
+
+.subjob-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.empty-state {
+  padding: 2rem;
+}
+
+.empty-icon {
+  opacity: 0.5;
+}
+/* Response Timeline Styles */
+.response-timeline {
+  position: relative;
+}
+
+.timeline-item {
+  position: relative;
+}
+
+.timeline-badge-container {
+  position: relative;
+  width: 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.timeline-badge {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 0.7rem;
+  z-index: 2;
+}
+
+.timeline-line {
+  width: 2px;
+  height: 100%;
+  background-color: #e9ecef;
+  position: absolute;
+  top: 24px;
+}
+
+.timeline-content {
+  flex: 1;
+  padding-bottom: 16px;
+}

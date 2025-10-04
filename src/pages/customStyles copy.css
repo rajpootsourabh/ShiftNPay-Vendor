@@ -1,0 +1,175 @@
+/* General styles for the shift schedule */
+.shift-schedule {
+  font-family: Arial, sans-serif;
+  margin-left: 15px;
+}
+
+.header {
+  display: grid;
+  grid-template-columns: 120px repeat(7, 1fr);
+  align-items: flex-start;
+  border: 1px solid #ddd;
+  text-align: left;
+  border-top-left-radius: 20px;
+    border-top-right-radius: 20px;
+}
+.member-row:last-child {
+  border-bottom-left-radius: 20px;
+  border-bottom-right-radius: 20px;
+}
+.header > div {
+  padding: 5px;
+  border-right: 1px solid #ddd; /* Add border-right to every column */
+  border-top-left-radius: 20px;
+  height: 80px;
+}
+
+.header > div:last-child {
+  border-right: none; /* Remove border from the last column */
+}
+
+.team-header {
+  background: #e9ecef;
+  padding: 8px 10px;
+  margin-top: 10px;
+  font-weight: bold;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-sizing: border-box;
+}
+
+.member-row {
+  display: grid;
+  grid-template-columns: 120px repeat(7, 1fr);
+  align-items: flex-start;
+  border-bottom: 1px solid #ddd;
+}
+
+.member-info {
+  display: grid;
+  align-items: baseline;
+}
+
+.avatar {
+  width: 25px;
+  height: 25px;
+  background-color: #6c757d;
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-weight: bold;
+  font-size: 10px;
+  line-height: 20px;
+}
+
+.shift-box {
+  text-align: center;
+  padding: 5px;
+  border-radius: 4px;
+  font-size: 11px;
+  background-color: #f8f9fa;
+  border: 1px solid #ddd; /* Minor border for each box */
+  box-shadow: 1px 1px 2px rgba(0, 0, 0, 0.05); /* Optional soft shadow */
+}
+.member-box {
+  text-align: center;
+  border-radius: 4px;
+  font-size: 12px;
+  background-color: #f8f9fa;
+  border: 1px solid #ddd;
+  box-shadow: 1px 1px 2px rgba(0, 0, 0, 0.05);
+  height: 90px;
+  width: 110px;
+}
+
+.shift-box p {
+  margin: 0;
+  font-weight: bold;
+}
+
+.shift-box span {
+  font-size: 11px;
+  color: #6c757d;
+}
+
+/* Specific status colors */
+.shift-box.normal {
+  background-color: #d4edda;
+  color: #155724;
+}
+
+.shift-box.no-info {
+  background-color: #f8d7da;
+  color: #721c24;
+}
+
+.shift-box.late {
+  background-color: #fff3cd;
+  color: #856404;
+}
+
+.shift-box.leave {
+  background-color: #cce5ff;
+  color: #004085;
+}
+
+.shift-box.absent {
+  background-color: #f5c6cb;
+  color: #721c24;
+}
+
+/* Collapsible section styles */
+.team-header button {
+  border: none;
+  background-color: #6c757d;
+  color: white;
+  padding: 5px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.team-header button:hover {
+  background-color: #5a6268;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .header, .member-row {
+    grid-template-columns: 70px repeat(7, 1fr);
+  }
+
+  .avatar {
+    width: 30px;
+    height: 30px;
+    font-size: 14px;
+  }
+
+  .shift-box {
+    font-size: 10px;
+  }
+}
+
+@media (max-width: 576px) {
+  .header, .member-row {
+    grid-template-columns: 50px repeat(7, 1fr);
+  }
+
+  .avatar {
+    width: 25px;
+    height: 25px;
+    font-size: 12px;
+  }
+}
+.f12{
+  font-size: 12px;
+}
+
+.tableBoxes{
+  height: 100px;
+  border: 1px solid lightgrey;
+  padding: 4px;
+}
