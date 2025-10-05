@@ -16,24 +16,31 @@ import {
 } from "../../../../store/IDB_SYS/Clients/careGiverSlice";
 import { toast } from "react-toastify";
 
-const EmployeeSchema = Yup.object().shape({
-  email: Yup.string().email("Invalid email").required("Required"),
-  firstName: Yup.string().when("editMode", (editMode, schema) =>
-    editMode ? schema.required("Required") : schema
-  ),
-  lastName: Yup.string().when("editMode", (editMode, schema) =>
-    editMode ? schema.required("Required") : schema
-  ),
-  mobile: Yup.string().when("editMode", (editMode, schema) =>
-    editMode ? schema.required("Required") : schema
-  ),
-  wage: Yup.number().when("editMode", (editMode, schema) =>
-    editMode ? schema.required("Required") : schema
-  ),
-  empStatus: Yup.string().when("editMode", (editMode, schema) =>
-    editMode ? schema.required("Required") : schema
-  ),
-});
+// Dynamic validation schema based on editMode
+const getValidationSchema = (editMode) => {
+  return Yup.object().shape({
+    email: Yup.string().email("Invalid email").required("Required"),
+    firstName: editMode
+      ? Yup.string().required("First Name is required")
+      : Yup.string(),
+    lastName: editMode
+      ? Yup.string().required("Last Name is required")
+      : Yup.string(),
+    mobile: editMode
+      ? Yup.string().required("Mobile is required")
+      : Yup.string(),
+    wage: editMode
+      ? Yup.number()
+        .typeError("Wage must be a number")
+        .required("Wage is required")
+        .positive("Wage must be positive")
+      : Yup.number().typeError("Wage must be a number"),
+    empStatus: editMode
+      ? Yup.string().required("Status is required")
+      : Yup.string(),
+  });
+};
+
 
 const DataGrid = () => {
   const dispatch = useDispatch();
@@ -91,9 +98,8 @@ const DataGrid = () => {
 
   const handleView = (row) => {
     const formattedData = {
-      Name: `${row.firstName || ""} ${row.middleName || ""} ${
-        row.lastName || ""
-      }`.trim(),
+      Name: `${row.firstName || ""} ${row.middleName || ""} ${row.lastName || ""
+        }`.trim(),
       Email: row.email,
       Mobile: row.mobile,
       "SSN No.": row.ssnNo,
@@ -246,7 +252,7 @@ const DataGrid = () => {
             <div className="modal-content border-0 shadow-lg">
               <Formik
                 initialValues={initialValues}
-                validationSchema={EmployeeSchema}
+                validationSchema={getValidationSchema(editMode)}
                 enableReinitialize
                 onSubmit={handleSubmit}
               >
@@ -368,6 +374,11 @@ const DataGrid = () => {
                               name="department"
                               className="form-control form-control-sm"
                             />
+                            <ErrorMessage
+                              name="department"
+                              component="div"
+                              className="text-danger small mt-1"
+                            />
                           </div>
                           <div className="mb-2">
                             <label className="form-label small fw-semibold">
@@ -377,6 +388,11 @@ const DataGrid = () => {
                               type="text"
                               name="jobTitle"
                               className="form-control form-control-sm"
+                            />
+                            <ErrorMessage
+                              name="jobTitle"
+                              component="div"
+                              className="text-danger small mt-1"
                             />
                           </div>
                         </>
