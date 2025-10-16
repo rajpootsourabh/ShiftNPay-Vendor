@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useRef } from "react";
 import { ErrorMessage, Field, FieldArray } from "formik";
 import { FaTrash, FaUpload, FaEye, FaInfoCircle, FaExternalLinkAlt, FaDownload, FaTimes, FaExclamationTriangle } from "react-icons/fa";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faCheck, faSave } from "@fortawesome/free-solid-svg-icons";
 
-const Attachments = ({ formik, clientData }) => {
+const Attachments = ({ formik, clientData, onSaveTab, isSaved, isSaving }) => {
   const [previewFile, setPreviewFile] = useState(null);
   const [previewFileName, setPreviewFileName] = useState("");
   const [previewFileType, setPreviewFileType] = useState("");
@@ -63,7 +65,7 @@ const Attachments = ({ formik, clientData }) => {
     const allFilesCount = countAllFiles();
     const newFilesCount = countNewFiles();
     const existingFilesCount = countExistingFiles();
-    
+
     return {
       totalRawSize,
       totalPayloadSize,
@@ -82,19 +84,19 @@ const Attachments = ({ formik, clientData }) => {
       const base64Data = base64String.split(',')[1];
       const byteCharacters = atob(base64Data);
       const byteArrays = [];
-      
+
       for (let offset = 0; offset < byteCharacters.length; offset += 1024) {
         const slice = byteCharacters.slice(offset, offset + 1024);
         const byteNumbers = new Array(slice.length);
-        
+
         for (let i = 0; i < slice.length; i++) {
           byteNumbers[i] = slice.charCodeAt(i);
         }
-        
+
         const byteArray = new Uint8Array(byteNumbers);
         byteArrays.push(byteArray);
       }
-      
+
       const blob = new Blob(byteArrays, { type: fileType });
       return URL.createObjectURL(blob);
     } catch (error) {
@@ -118,19 +120,19 @@ const Attachments = ({ formik, clientData }) => {
     if (clientData && clientData.attachments) {
       const formattedAttachments = clientData.attachments.map((attachment, index) => {
         let processedFile = attachment.file;
-        
-        if (attachment.file && 
-            typeof attachment.file === 'string' && 
-            attachment.file.startsWith('data:') &&
-            attachment.fileSize > 5 * 1024 * 1024) {
-          
+
+        if (attachment.file &&
+          typeof attachment.file === 'string' &&
+          attachment.file.startsWith('data:') &&
+          attachment.fileSize > 5 * 1024 * 1024) {
+
           const blobUrl = base64ToBlobUrl(attachment.file, attachment.fileType);
           if (blobUrl && blobUrl.startsWith('blob:')) {
             blobUrlsRef.current.set(`api-${index}`, blobUrl);
             processedFile = blobUrl;
           }
         }
-        
+
         return {
           _id: attachment._id || '',
           description: attachment.description || '',
@@ -144,7 +146,7 @@ const Attachments = ({ formik, clientData }) => {
           _originalFileData: attachment.file
         };
       });
-      
+
       formik.setFieldValue('attachments', formattedAttachments);
     }
   }, [clientData, formik.setFieldValue]);
@@ -158,22 +160,22 @@ const Attachments = ({ formik, clientData }) => {
       }
       return blobUrlsRef.current.get(index);
     }
-    
+
     // If it's a blob URL (from API conversion)
     if (typeof attachment.file === 'string' && attachment.file.startsWith('blob:')) {
       return attachment.file;
     }
-    
+
     // If it's a base64 string (for preview of small files)
     if (typeof attachment.file === 'string' && attachment.file.startsWith('data:')) {
       return attachment.file;
     }
-    
+
     // If it's a URL from API
     if (typeof attachment.file === 'string' && attachment.file.startsWith('http')) {
       return attachment.file;
     }
-    
+
     return null;
   };
 
@@ -213,7 +215,7 @@ const Attachments = ({ formik, clientData }) => {
     // Check total RAW size for ALL files (existing + new) - STRICT 8.5MB LIMIT
     const currentStats = getUsageStats();
     const estimatedNewRawSize = currentStats.totalRawSize + file.size;
-    
+
     if (estimatedNewRawSize > MAX_TOTAL_RAW_SIZE) {
       const remainingMB = (MAX_TOTAL_RAW_SIZE - currentStats.totalRawSize) / (1024 * 1024);
       formik.setFieldError(
@@ -226,7 +228,7 @@ const Attachments = ({ formik, clientData }) => {
     try {
       // Convert file to base64 for API submission
       const base64File = await fileToBase64(file);
-      
+
       // Create blob URL for preview
       const blobUrl = URL.createObjectURL(file);
       blobUrlsRef.current.set(index, blobUrl);
@@ -256,7 +258,7 @@ const Attachments = ({ formik, clientData }) => {
 
   const handleFilePreview = (attachment, index) => {
     const fileUrl = getFileUrl(attachment, index);
-    
+
     if (!fileUrl) return;
 
     setPreviewFile(fileUrl);
@@ -266,7 +268,7 @@ const Attachments = ({ formik, clientData }) => {
 
   const handleLargeFilePreview = (attachment, index) => {
     const fileUrl = getFileUrl(attachment, index);
-    
+
     if (!fileUrl) return;
 
     if (attachment.fileSize > 10 * 1024 * 1024 && attachment.isFromApi) {
@@ -292,7 +294,7 @@ const Attachments = ({ formik, clientData }) => {
 
   const handleDownload = (attachment, index) => {
     const fileUrl = getFileUrl(attachment, index);
-    
+
     if (fileUrl) {
       const link = document.createElement('a');
       link.href = fileUrl;
@@ -366,14 +368,14 @@ const Attachments = ({ formik, clientData }) => {
   // Transform attachments before submission
   const transformAttachmentsForSubmit = (attachments) => {
     if (!attachments) return [];
-    
+
     return attachments.map(attachment => {
       // For existing files, don't send file content at all
       if (attachment._isExisting) {
         const { file, _fileObject, _originalFileData, _isExisting, ...cleanAttachment } = attachment;
         return cleanAttachment;
       }
-      
+
       // For new files, send everything
       const { _fileObject, _originalFileData, _isExisting, ...cleanAttachment } = attachment;
       return cleanAttachment;
@@ -383,30 +385,30 @@ const Attachments = ({ formik, clientData }) => {
   // Intercept form submission to transform attachments
   useEffect(() => {
     const originalSubmit = formik.handleSubmit;
-    
+
     formik.handleSubmit = (e) => {
       if (e && e.preventDefault) e.preventDefault();
-      
+
       // Check if total RAW size exceeds limit before submission
       const currentStats = getUsageStats();
       if (currentStats.isOverLimit) {
         formik.setFieldError('attachments', `Total file size (${(currentStats.totalRawSize / (1024 * 1024)).toFixed(1)}MB) exceeds the ${MAX_TOTAL_RAW_SIZE / (1024 * 1024)}MB limit. Please remove some files.`);
         return;
       }
-      
+
       // Transform attachments before submission
       const transformedAttachments = transformAttachmentsForSubmit(formik.values.attachments);
       const submitData = {
         ...formik.values,
         attachments: transformedAttachments
       };
-      
+
       // Use Formik's submit function with transformed data
       formik.submitForm().then(() => {
         // Optionally restore original values if needed
       });
     };
-    
+
     return () => {
       formik.handleSubmit = originalSubmit;
     };
@@ -417,63 +419,59 @@ const Attachments = ({ formik, clientData }) => {
 
   return (
     <div className="attachments-container">
-      <div className="mb-4">
-        <h3>Client Attachments</h3>
-        
-        {/* Real-time Usage Display - Shows ALL files (RAW sizes) */}
-        <div className={`card mb-3 ${usageStats.isOverLimit ? 'border-danger' : ''}`}>
-          <div className="card-body">
-            <div className="row align-items-center">
-              <div className="col-md-8">
-                <h6 className="card-title mb-2">
-                  <FaInfoCircle className="me-2" />
-                  Total File Size Usage (All Files)
-                  {usageStats.isOverLimit && (
-                    <span className="badge bg-danger ms-2">OVER LIMIT</span>
-                  )}
-                </h6>
-                <div className="progress mb-2" style={{ height: '8px' }}>
-                  <div 
-                    className={`progress-bar ${usageStats.isOverLimit ? 'bg-danger' : usageStats.usagePercentage > 80 ? 'bg-warning' : usageStats.usagePercentage > 60 ? 'bg-info' : 'bg-success'}`}
-                    role="progressbar" 
-                    style={{ width: `${Math.min(usageStats.usagePercentage, 100)}%` }}
-                    aria-valuenow={usageStats.usagePercentage}
-                    aria-valuemin="0" 
-                    aria-valuemax="100"
-                  >
-                  </div>
-                </div>
-                <small className="text-muted">
-                  {usageStats.allFilesCount} total files ({usageStats.existingFilesCount} existing + {usageStats.newFilesCount} new) • 
-                  {(usageStats.totalRawSize / (1024 * 1024)).toFixed(1)}MB / {MAX_TOTAL_RAW_SIZE / (1024 * 1024)}MB used • 
-                  {(usageStats.remainingSize / (1024 * 1024)).toFixed(1)}MB remaining
-                </small>
-              </div>
-              <div className="col-md-4 text-end">
-                {usageStats.isOverLimit ? (
-                  <div className="text-danger">
-                    <FaExclamationTriangle className="me-1" />
-                    <strong>OVER LIMIT!</strong>
-                    <div className="small">Remove files to submit</div>
-                  </div>
-                ) : usageStats.usagePercentage > 80 && (
-                  <div className="text-warning">
-                    <FaExclamationTriangle className="me-1" />
-                    <strong>Near Limit!</strong>
-                  </div>
+      {/* Real-time Usage Display - Shows ALL files (RAW sizes) */}
+      <div className={`card mb-3 ${usageStats.isOverLimit ? 'border-danger' : ''}`}>
+        <div className="card-body">
+          <div className="row align-items-center">
+            <div className="col-md-8">
+              <h6 className="card-title mb-2">
+                <FaInfoCircle className="me-2" />
+                Total File Size Usage (All Files)
+                {usageStats.isOverLimit && (
+                  <span className="badge bg-danger ms-2">OVER LIMIT</span>
                 )}
-                <div className="text-muted">
-                  Max: {MAX_TOTAL_RAW_SIZE / (1024 * 1024)}MB total
+              </h6>
+              <div className="progress mb-2" style={{ height: '8px' }}>
+                <div
+                  className={`progress-bar ${usageStats.isOverLimit ? 'bg-danger' : usageStats.usagePercentage > 80 ? 'bg-warning' : usageStats.usagePercentage > 60 ? 'bg-info' : 'bg-success'}`}
+                  role="progressbar"
+                  style={{ width: `${Math.min(usageStats.usagePercentage, 100)}%` }}
+                  aria-valuenow={usageStats.usagePercentage}
+                  aria-valuemin="0"
+                  aria-valuemax="100"
+                >
                 </div>
+              </div>
+              <small className="text-muted">
+                {usageStats.allFilesCount} total files ({usageStats.existingFilesCount} existing + {usageStats.newFilesCount} new) •
+                {(usageStats.totalRawSize / (1024 * 1024)).toFixed(1)}MB / {MAX_TOTAL_RAW_SIZE / (1024 * 1024)}MB used •
+                {(usageStats.remainingSize / (1024 * 1024)).toFixed(1)}MB remaining
+              </small>
+            </div>
+            <div className="col-md-4 text-end">
+              {usageStats.isOverLimit ? (
+                <div className="text-danger">
+                  <FaExclamationTriangle className="me-1" />
+                  <strong>OVER LIMIT!</strong>
+                  <div className="small">Remove files to submit</div>
+                </div>
+              ) : usageStats.usagePercentage > 80 && (
+                <div className="text-warning">
+                  <FaExclamationTriangle className="me-1" />
+                  <strong>Near Limit!</strong>
+                </div>
+              )}
+              <div className="text-muted">
+                Max: {MAX_TOTAL_RAW_SIZE / (1024 * 1024)}MB total
               </div>
             </div>
           </div>
         </div>
-
-        <p className="text-muted">
-          Max {MAX_INDIVIDUAL_FILE_SIZE / (1024 * 1024)}MB per file • Max {MAX_TOTAL_RAW_SIZE / (1024 * 1024)}MB total (includes all files)
-        </p>
       </div>
+
+      <p className="text-muted">
+        Max {MAX_INDIVIDUAL_FILE_SIZE / (1024 * 1024)}MB per file • Max {MAX_TOTAL_RAW_SIZE / (1024 * 1024)}MB total (includes all files)
+      </p>
 
       <FieldArray name="attachments">
         {(arrayHelpers) => (
@@ -495,17 +493,16 @@ const Attachments = ({ formik, clientData }) => {
                       const isLargeFile = attachment.fileSize > 5 * 1024 * 1024;
                       const isExistingFile = attachment._isExisting;
                       const canAddMoreFiles = usageStats.remainingSize > 0 && !usageStats.isOverLimit;
-                      
+
                       return (
                         <tr key={index}>
                           <td>
                             <Field
                               name={`attachments[${index}].description`}
-                              className={`form-control ${
-                                formik.errors.attachments?.[index]?.description
+                              className={`form-control ${formik.errors.attachments?.[index]?.description
                                   ? "is-invalid"
                                   : ""
-                              }`}
+                                }`}
                               placeholder="Enter description"
                             />
                             <ErrorMessage
@@ -524,7 +521,7 @@ const Attachments = ({ formik, clientData }) => {
                                   <span className="badge bg-secondary">
                                     {(attachment.fileSize / (1024 * 1024)).toFixed(1)} MB
                                   </span>
-                                  
+
                                   <button
                                     type="button"
                                     className="btn btn-sm btn-outline-primary"
@@ -562,9 +559,8 @@ const Attachments = ({ formik, clientData }) => {
                                 <>
                                   <div className="d-flex align-items-center">
                                     <label
-                                      className={`btn btn-sm btn-outline-secondary ${
-                                        !canAddMoreFiles || formik.errors.attachments?.[index]?.file ? "is-invalid" : ""
-                                      }`}
+                                      className={`btn btn-sm btn-outline-secondary ${!canAddMoreFiles || formik.errors.attachments?.[index]?.file ? "is-invalid" : ""
+                                        }`}
                                       style={!canAddMoreFiles ? { opacity: 0.6, cursor: 'not-allowed' } : {}}
                                       title={!canAddMoreFiles ? "File size limit reached" : "Upload file"}
                                     >
@@ -713,12 +709,12 @@ const Attachments = ({ formik, clientData }) => {
               <div className="modal-body p-0" style={{ maxHeight: '60vh', overflow: 'auto' }}>
                 {previewFileType.includes('image/') ? (
                   <div className="d-flex justify-content-center align-items-center p-3 bg-dark" style={{ minHeight: '400px' }}>
-                    <img 
-                      src={previewFile} 
-                      alt="Preview" 
+                    <img
+                      src={previewFile}
+                      alt="Preview"
                       className="img-fluid"
-                      style={{ 
-                        maxHeight: '55vh', 
+                      style={{
+                        maxHeight: '55vh',
                         maxWidth: '100%',
                         objectFit: 'contain'
                       }}
@@ -726,8 +722,8 @@ const Attachments = ({ formik, clientData }) => {
                   </div>
                 ) : previewFileType.includes('application/pdf') ? (
                   <div style={{ height: '500px' }}>
-                    <iframe 
-                      src={previewFile} 
+                    <iframe
+                      src={previewFile}
                       className="w-100 h-100 border-0"
                       title="PDF Preview"
                     />
@@ -781,6 +777,36 @@ const Attachments = ({ formik, clientData }) => {
           </div>
         </div>
       )}
+
+      {/* Bottom Save Button - Aligned to Right */}
+      <div className="mt-4 pt-3 border-top d-flex justify-content-end">
+        <div className="d-flex align-items-center gap-3">
+          {isSaved && (
+            <span className="text-success d-flex align-items-center">
+              <FontAwesomeIcon icon={faCheck} className="me-1" />
+              Saved successfully
+            </span>
+          )}
+          <button
+            type="button"
+            className="btn btn-success"
+            onClick={onSaveTab}
+            disabled={isSaving || formik.isSubmitting}
+          >
+            {isSaving ? (
+              <>
+                <span className="spinner-border spinner-border-sm me-2" />
+                Saving...
+              </>
+            ) : (
+              <>
+                <FontAwesomeIcon icon={faSave} className="me-2" />
+                Save
+              </>
+            )}
+          </button>
+        </div>
+      </div>
     </div>
   );
 };

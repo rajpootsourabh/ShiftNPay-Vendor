@@ -1,8 +1,10 @@
 import React, { useEffect } from 'react';
 import { useField, FieldArray } from 'formik';
 import { Form, Row, Col, Button, Table } from 'react-bootstrap';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faCheck, faSave } from '@fortawesome/free-solid-svg-icons';
 
-const History = ({ formik, clientData }) => {
+const History = ({ formik, clientData, onSaveTab, isSaved, isSaving }) => {
   // Initialize history items from API when clientData is available
   useEffect(() => {
     if (clientData && clientData.historyItems && Array.isArray(clientData.historyItems)) {
@@ -12,6 +14,7 @@ const History = ({ formik, clientData }) => {
 
   return (
     <div className="history-tab">
+
       <h3>Client History</h3>
       <p className="text-muted">
         Record important historical information about the client's care.
@@ -169,6 +172,36 @@ const History = ({ formik, clientData }) => {
           )}
         </div>
       </div>
+
+      {/* Bottom Save Button - Aligned to Right */}
+            <div className="mt-4 pt-3 border-top d-flex justify-content-end">
+              <div className="d-flex align-items-center gap-3">
+                {isSaved && (
+                  <span className="text-success d-flex align-items-center">
+                    <FontAwesomeIcon icon={faCheck} className="me-1" />
+                    Saved successfully
+                  </span>
+                )}
+                <button
+                  type="button"
+                  className="btn btn-success"
+                  onClick={onSaveTab}
+                  disabled={isSaving || formik.isSubmitting}
+                >
+                  {isSaving ? (
+                    <>
+                      <span className="spinner-border spinner-border-sm me-2" />
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <FontAwesomeIcon icon={faSave} className="me-2" />
+                      Save
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
     </div>
   );
 };

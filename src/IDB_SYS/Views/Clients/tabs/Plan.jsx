@@ -2,8 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { useField, FieldArray } from 'formik';
 import { Form, Button, Table, Badge, Modal, Accordion, Row, Col } from 'react-bootstrap';
 import { FaFileMedical, FaCalendarAlt, FaUserMd } from 'react-icons/fa';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faCheck, faSave } from '@fortawesome/free-solid-svg-icons';
 
-const Plan = ({ formik, clientData }) => {
+const Plan = ({ formik, clientData, onSaveTab, isSaved, isSaving }) => {
   const [showCarePlanModal, setShowCarePlanModal] = useState(false);
   const [editIndex, setEditIndex] = useState(null);
   const [showMARModal, setShowMARModal] = useState(false);
@@ -30,7 +32,7 @@ const Plan = ({ formik, clientData }) => {
         'requireMarSignature',
         'requirePrnReason'
       ];
-      
+
       planFields.forEach(field => {
         if (clientData[field] !== undefined) {
           formik.setFieldValue(field, clientData[field]);
@@ -127,7 +129,6 @@ const Plan = ({ formik, clientData }) => {
 
   return (
     <div className="plan-tab">
-      <h3>Plan of Care (485)</h3>
       <p className="text-muted">
         Manage the client's comprehensive care plan and physician orders.
       </p>
@@ -215,10 +216,10 @@ const Plan = ({ formik, clientData }) => {
                         <Badge
                           bg={
                             item.endDate && new Date(item.endDate) < new Date() ? 'secondary' :
-                            item.status === 'Active' ? 'success' :
-                            item.status === 'Pending' ? 'warning' :
-                            item.status === 'Discontinued' ? 'danger' :
-                            'secondary'
+                              item.status === 'Active' ? 'success' :
+                                item.status === 'Pending' ? 'warning' :
+                                  item.status === 'Discontinued' ? 'danger' :
+                                    'secondary'
                           }
                         >
                           {item.endDate && new Date(item.endDate) < new Date() ? 'Expired' : item.status || 'Unknown'}
@@ -424,8 +425,8 @@ const Plan = ({ formik, clientData }) => {
           <Button variant="secondary" onClick={resetModal}>
             Cancel
           </Button>
-          <Button 
-            variant="primary" 
+          <Button
+            variant="primary"
             onClick={handleSaveCarePlan}
             disabled={!newCarePlan.discipline || !newCarePlan.frequency || !newCarePlan.startDate || !newCarePlan.goals}
           >
@@ -495,6 +496,36 @@ const Plan = ({ formik, clientData }) => {
           </Button>
         </Modal.Footer>
       </Modal>
+
+      {/* Bottom Save Button - Aligned to Right */}
+      <div className="mt-4 pt-3 border-top d-flex justify-content-end">
+        <div className="d-flex align-items-center gap-3">
+          {isSaved && (
+            <span className="text-success d-flex align-items-center">
+              <FontAwesomeIcon icon={faCheck} className="me-1" />
+              Saved successfully
+            </span>
+          )}
+          <button
+            type="button"
+            className="btn btn-success"
+            onClick={onSaveTab}
+            disabled={isSaving || formik.isSubmitting}
+          >
+            {isSaving ? (
+              <>
+                <span className="spinner-border spinner-border-sm me-2" />
+                Saving...
+              </>
+            ) : (
+              <>
+                <FontAwesomeIcon icon={faSave} className="me-2" />
+                Save
+              </>
+            )}
+          </button>
+        </div>
+      </div>
     </div>
   );
 };

@@ -1,8 +1,10 @@
 import React, { useEffect } from 'react';
 import { useField, FieldArray } from 'formik';
 import { Form, Row, Col, Button, Table, Badge } from 'react-bootstrap';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faCheck, faSave } from '@fortawesome/free-solid-svg-icons';
 
-const Interruptions = ({ formik, clientData }) => {
+const Interruptions = ({ formik, clientData, onSaveTab, isSaved, isSaving }) => {
   // Initialize interruptions from API when clientData is available
   useEffect(() => {
     if (clientData && clientData.interruptions && Array.isArray(clientData.interruptions)) {
@@ -22,6 +24,7 @@ const Interruptions = ({ formik, clientData }) => {
 
   return (
     <div className="interruptions-tab">
+
       <h3>Interruptions of Service</h3>
       <p className="text-muted">
         Record any periods where services were paused or interrupted.
@@ -129,7 +132,7 @@ const Interruptions = ({ formik, clientData }) => {
                       <td>
                         <Form.Control
                           as="textarea"
-                          rows={2} 
+                          rows={2}
                           name={`interruptions.${index}.reason`}
                           value={interruption.reason || ''}
                           onChange={formik.handleChange}
@@ -209,6 +212,36 @@ const Interruptions = ({ formik, clientData }) => {
         ) : (
           <Badge bg="success">Services Active</Badge>
         )}
+      </div>
+
+      {/* Bottom Save Button - Aligned to Right */}
+      <div className="mt-4 pt-3 border-top d-flex justify-content-end">
+        <div className="d-flex align-items-center gap-3">
+          {isSaved && (
+            <span className="text-success d-flex align-items-center">
+              <FontAwesomeIcon icon={faCheck} className="me-1" />
+              Saved successfully
+            </span>
+          )}
+          <button
+            type="button"
+            className="btn btn-success"
+            onClick={onSaveTab}
+            disabled={isSaving || formik.isSubmitting}
+          >
+            {isSaving ? (
+              <>
+                <span className="spinner-border spinner-border-sm me-2" />
+                Saving...
+              </>
+            ) : (
+              <>
+                <FontAwesomeIcon icon={faSave} className="me-2" />
+                Save
+              </>
+            )}
+          </button>
+        </div>
       </div>
     </div>
   );

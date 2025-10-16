@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Form, Button, Table, Badge, Modal, Alert, Row, Col } from 'react-bootstrap';
 import { FaClipboardCheck, FaCalendarAlt, FaNotesMedical } from 'react-icons/fa';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faCheck, faSave } from '@fortawesome/free-solid-svg-icons';
 
-const Service = ({ formik, clientData }) => {
+const Service = ({ formik, clientData, onSaveTab, isSaved, isSaving }) => {
   const [showModal, setShowModal] = useState(false);
   const [editIndex, setEditIndex] = useState(null);
   const [showInactive, setShowInactive] = useState(false);
@@ -26,7 +28,7 @@ const Service = ({ formik, clientData }) => {
         'showInactiveServiceOrders',
         'requireServiceOrder'
       ];
-      
+
       serviceFields.forEach(field => {
         if (clientData[field] !== undefined) {
           formik.setFieldValue(field, clientData[field]);
@@ -84,7 +86,7 @@ const Service = ({ formik, clientData }) => {
         orderData
       ]);
     }
-    
+
     setShowModal(false);
     setEditIndex(null);
     setNewServiceOrder({
@@ -134,7 +136,7 @@ const Service = ({ formik, clientData }) => {
     setShowModal(true);
   };
 
-  const filteredOrders = (formik.values.serviceOrders || []).filter(order => 
+  const filteredOrders = (formik.values.serviceOrders || []).filter(order =>
     showInactive || order.status === 'active' || order.status === 'pending'
   );
 
@@ -144,7 +146,6 @@ const Service = ({ formik, clientData }) => {
 
   return (
     <div className="service-tab">
-      <h3>Service Orders</h3>
       <p className="text-muted">
         Manage authorized services and care directives for the client.
       </p>
@@ -282,7 +283,7 @@ const Service = ({ formik, clientData }) => {
                 <Form.Select
                   name="serviceType"
                   value={newServiceOrder.serviceType}
-                  onChange={(e) => setNewServiceOrder({...newServiceOrder, serviceType: e.target.value})}
+                  onChange={(e) => setNewServiceOrder({ ...newServiceOrder, serviceType: e.target.value })}
                 >
                   <option value="">Select service type</option>
                   {serviceTypes.map(type => (
@@ -297,7 +298,7 @@ const Service = ({ formik, clientData }) => {
                 <Form.Select
                   name="status"
                   value={newServiceOrder.status}
-                  onChange={(e) => setNewServiceOrder({...newServiceOrder, status: e.target.value})}
+                  onChange={(e) => setNewServiceOrder({ ...newServiceOrder, status: e.target.value })}
                 >
                   {statusOptions.map(status => (
                     <option key={status.value} value={status.value}>
@@ -317,7 +318,7 @@ const Service = ({ formik, clientData }) => {
                   type="date"
                   name="startDate"
                   value={newServiceOrder.startDate}
-                  onChange={(e) => setNewServiceOrder({...newServiceOrder, startDate: e.target.value})}
+                  onChange={(e) => setNewServiceOrder({ ...newServiceOrder, startDate: e.target.value })}
                 />
               </Form.Group>
             </Col>
@@ -329,7 +330,7 @@ const Service = ({ formik, clientData }) => {
                   name="endDate"
                   min={newServiceOrder.startDate}
                   value={newServiceOrder.endDate}
-                  onChange={(e) => setNewServiceOrder({...newServiceOrder, endDate: e.target.value})}
+                  onChange={(e) => setNewServiceOrder({ ...newServiceOrder, endDate: e.target.value })}
                 />
               </Form.Group>
             </Col>
@@ -342,7 +343,7 @@ const Service = ({ formik, clientData }) => {
                 <Form.Select
                   name="frequency"
                   value={newServiceOrder.frequency}
-                  onChange={(e) => setNewServiceOrder({...newServiceOrder, frequency: e.target.value})}
+                  onChange={(e) => setNewServiceOrder({ ...newServiceOrder, frequency: e.target.value })}
                 >
                   <option value="">Select frequency</option>
                   {frequencyOptions.map(freq => (
@@ -358,7 +359,7 @@ const Service = ({ formik, clientData }) => {
                   type="text"
                   name="authNumber"
                   value={newServiceOrder.authNumber}
-                  onChange={(e) => setNewServiceOrder({...newServiceOrder, authNumber: e.target.value})}
+                  onChange={(e) => setNewServiceOrder({ ...newServiceOrder, authNumber: e.target.value })}
                   placeholder="Insurance authorization #"
                 />
               </Form.Group>
@@ -372,7 +373,7 @@ const Service = ({ formik, clientData }) => {
               rows={3}
               name="description"
               value={newServiceOrder.description}
-              onChange={(e) => setNewServiceOrder({...newServiceOrder, description: e.target.value})}
+              onChange={(e) => setNewServiceOrder({ ...newServiceOrder, description: e.target.value })}
               placeholder="Describe the service to be provided..."
             />
           </Form.Group>
@@ -384,7 +385,7 @@ const Service = ({ formik, clientData }) => {
               rows={2}
               name="physicianNotes"
               value={newServiceOrder.physicianNotes}
-              onChange={(e) => setNewServiceOrder({...newServiceOrder, physicianNotes: e.target.value})}
+              onChange={(e) => setNewServiceOrder({ ...newServiceOrder, physicianNotes: e.target.value })}
               placeholder="Any special instructions from the physician..."
             />
           </Form.Group>
@@ -395,7 +396,7 @@ const Service = ({ formik, clientData }) => {
               label="Require Caregiver Signature"
               name="requireSignature"
               checked={newServiceOrder.requireSignature}
-              onChange={(e) => setNewServiceOrder({...newServiceOrder, requireSignature: e.target.checked})}
+              onChange={(e) => setNewServiceOrder({ ...newServiceOrder, requireSignature: e.target.checked })}
             />
           </Form.Group>
         </Modal.Body>
@@ -417,6 +418,36 @@ const Service = ({ formik, clientData }) => {
           </Button>
         </Modal.Footer>
       </Modal>
+
+      {/* Bottom Save Button - Aligned to Right */}
+      <div className="mt-4 pt-3 border-top d-flex justify-content-end">
+        <div className="d-flex align-items-center gap-3">
+          {isSaved && (
+            <span className="text-success d-flex align-items-center">
+              <FontAwesomeIcon icon={faCheck} className="me-1" />
+              Saved successfully
+            </span>
+          )}
+          <button
+            type="button"
+            className="btn btn-success"
+            onClick={onSaveTab}
+            disabled={isSaving || formik.isSubmitting}
+          >
+            {isSaving ? (
+              <>
+                <span className="spinner-border spinner-border-sm me-2" />
+                Saving...
+              </>
+            ) : (
+              <>
+                <FontAwesomeIcon icon={faSave} className="me-2" />
+                Save
+              </>
+            )}
+          </button>
+        </div>
+      </div>
     </div>
   );
 };

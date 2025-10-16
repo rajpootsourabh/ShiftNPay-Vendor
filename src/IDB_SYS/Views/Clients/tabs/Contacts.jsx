@@ -6,11 +6,14 @@ import {
   FaInfoCircle,
   FaEnvelope,
   FaPaperPlane,
+  FaSave
 } from "react-icons/fa";
 import PhoneInput from "react-phone-number-input";
 import "react-phone-number-input/style.css";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faCheck, faSave } from "@fortawesome/free-solid-svg-icons";
 
-const Contacts = ({ formik, clientData }) => {
+const Contacts = ({ formik, clientData, onSaveTab, isSaved, isSaving }) => {
   const { values, setFieldValue } = useFormikContext();
   const [showLoginLinkModal, setShowLoginLinkModal] = useState(false);
   const [selectedContactIndex, setSelectedContactIndex] = useState(null);
@@ -30,7 +33,7 @@ const Contacts = ({ formik, clientData }) => {
         'initialContactRelation',
         'includeOnCarePlan'
       ];
-      
+
       initialContactFields.forEach(field => {
         if (clientData[field] !== undefined) {
           setFieldValue(field, clientData[field]);
@@ -56,6 +59,7 @@ const Contacts = ({ formik, clientData }) => {
 
   return (
     <div className="contacts-container">
+
       <div className="mb-4">
         <h3>Client Contacts</h3>
         <p className="text-muted">
@@ -273,11 +277,10 @@ const Contacts = ({ formik, clientData }) => {
                               <td>
                                 <Field
                                   name={`additionalContacts[${index}].name`}
-                                  className={`form-control ${
-                                    contactTouched.name && contactErrors.name
+                                  className={`form-control ${contactTouched.name && contactErrors.name
                                       ? "is-invalid"
                                       : ""
-                                  }`}
+                                    }`}
                                 />
                                 <ErrorMessage
                                   name={`additionalContacts[${index}].name`}
@@ -293,11 +296,10 @@ const Contacts = ({ formik, clientData }) => {
                                   onChange={(phone) =>
                                     handlePhoneChange(phone, index, "phone")
                                   }
-                                  inputClassName={`form-control ${
-                                    contactTouched.phone && contactErrors.phone
+                                  inputClassName={`form-control ${contactTouched.phone && contactErrors.phone
                                       ? "is-invalid"
                                       : ""
-                                  }`}
+                                    }`}
                                 />
                                 {contactTouched.phone &&
                                   contactErrors.phone && (
@@ -381,6 +383,36 @@ const Contacts = ({ formik, clientData }) => {
               </div>
             )}
           </FieldArray>
+        </div>
+      </div>
+
+      {/* Bottom Save Button - Aligned to Right */}
+      <div className="mt-4 pt-3 border-top d-flex justify-content-end">
+        <div className="d-flex align-items-center gap-3">
+          {isSaved && (
+            <span className="text-success d-flex align-items-center">
+              <FontAwesomeIcon icon={faCheck} className="me-1" />
+              Saved successfully
+            </span>
+          )}
+          <button
+            type="button"
+            className="btn btn-success"
+            onClick={onSaveTab}
+            disabled={isSaving || formik.isSubmitting}
+          >
+            {isSaving ? (
+              <>
+                <span className="spinner-border spinner-border-sm me-2" />
+                Saving...
+              </>
+            ) : (
+              <>
+                <FontAwesomeIcon icon={faSave} className="me-2" />
+                Save
+              </>
+            )}
+          </button>
         </div>
       </div>
 

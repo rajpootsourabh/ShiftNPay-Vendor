@@ -52,6 +52,10 @@ const ClientForm = () => {
   ]);
   const [isValidating, setIsValidating] = useState(false);
   const [initialValues, setInitialValues] = useState(null);
+  const [savedTabs, setSavedTabs] = useState([]);
+  const [isSaving, setIsSaving] = useState(false);
+  const [currentClientId, setCurrentClientId] = useState(null);
+
   const { selectedClient } = useSelector((state) => state.client);
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -60,16 +64,16 @@ const ClientForm = () => {
   useEffect(() => {
     if (clientId) {
       dispatch(fetchClientById(clientId));
+      setCurrentClientId(clientId);
     } else {
-      // Set empty initial values for new client
       setInitialValues(getEmptyInitialValues());
     }
   }, [clientId, dispatch]);
-  // Initial values for all form fields across all tabs
 
   useEffect(() => {
     if (clientId && selectedClient && selectedClient._id === clientId) {
       setInitialValues(selectedClient);
+      setCurrentClientId(selectedClient._id);
     }
   }, [selectedClient, clientId]);
 
@@ -142,6 +146,8 @@ const ClientForm = () => {
       physician4: null,
       covidVaccinated: false,
       vaccineRefused: false,
+      covidVaccinatedAlert: false,
+      vaccineRefusedAlert: false,
       refusedReason: "",
       vaccineCard: null,
       vaccineType: "",
@@ -150,7 +156,7 @@ const ClientForm = () => {
       fluVaccineStatus: "",
       fluRefusedReason: "",
       alertNote: "",
-      generationsEvvAlert: false,
+      // generationsEvvAlert: false,
       alertText: "",
       enableClientSpecific1500: false,
       cms1500Version: "08/05",
@@ -264,40 +270,175 @@ const ClientForm = () => {
     return data;
   };
 
-  // Validation schema for all tabs
+  // Helper function to extract relevant data for each tab
+  const extractTabData = (tabId, allValues) => {
+    const tabDataMap = {
+      Personal: [
+        'firstName', 'middleInitial', 'lastName', 'phone1', 'phone2', 'dob', 'status', 'gender',
+        'inquiryDate', 'assessmentDate', 'reasons', 'referredBy', 'serviceStart', 'serviceEnd',
+        'email', 'webPassword', 'enableWebLogin', 'enable2FA', 'enableAssistedGPS',
+        'hospitalDischargePrior', 'erVisitPrior', 'caseManager', 'ambulatory', 'physician',
+        'referralNumber', 'dnr', 'diagnosisCode', 'diagnosisDescription', 'clientType',
+        'medRecordNumber', 'ssn', 'locationId', 'evvId', 'accountingId', 'priority', 'weight',
+        'homeAddress1', 'homeAddress2', 'homeCity', 'homeState', 'homeZip', 'homeCountry',
+        'homeStartAddressType', 'homeEndAddressType', 'otherEvvDescription', 'otherEvvAddress1',
+        'otherEvvAddress2', 'otherEvvCity', 'otherEvvState', 'otherEvvZip', 'otherEvvStartAddressType',
+        'otherEvvEndAddressType', 'billingPayor', 'billingAddress1', 'billingAddress2', 'billingCity',
+        'billingState', 'billingZip', 'payor2', 'payor3', 'payor4', 'physician2', 'physician3',
+        'physician4', 'covidVaccinated', 'vaccineRefused', 'refusedReason', 'vaccineCard',
+        'vaccineType', 'vaccineDate', 'fluVaccineDate', 'fluVaccineStatus', 'fluRefusedReason',
+        'alertNote',  'covidVaccinatedAlert', 'vaccineRefusedAlert', 'alertText', 'enableClientSpecific1500', 'cms1500Version',
+        'requireCaregiverSignature', 'requireClientSignature', 'clientPhoto'
+      ],
+      Attachments: ['attachments'],
+      Charting: ['careNotesAccess', 'woundNotesAccess', 'clientLoginNotes', 'chartingNotes'],
+      Contacts: [
+        'initialContactName', 'initialContactEmail', 'initialContactPhone', 'initialContactAltPhone',
+        'initialContactWebPassword', 'initialContactEnableLogin', 'initialContactEnable2FA',
+        'initialContactRelation', 'includeOnCarePlan', 'additionalContacts'
+      ],
+      Custom: ['customFields'],
+      Directions: ['directions', 'parkingInfo', 'accessInstructions', 'specialInstructions'],
+      Exclusions: ['exclusions', 'preferences'],
+      History: ['historyItems'],
+      Interruptions: ['interruptions'],
+      Invoicing: [
+        'openBalance', 'overdueBalance', 'lastPaymentDate', 'invoiceType', 'invoiceStatus',
+        'dateFrom', 'dateTo', 'invoices', 'payments'
+      ],
+      Needs: ['needsMasterList', 'assignedNeeds'],
+      Notes: ['notes'],
+      Plan: [
+        'enableMarDocumentation', 'marSchedule', 'marTimes', 'requireMarSignature',
+        'requirePrnReason', 'carePlans'
+      ],
+      Reminders: ['reminders'],
+      Service: ['showInactiveServiceOrders', 'requireServiceOrder', 'serviceOrders'],
+      Supervisory: ['supervisoryVisits'],
+      Visit: ['visitHistory'],
+      Wellness: ['wellnessResponses', 'wellnessHistory', 'wellnessGroupFilter']
+    };
 
+    const relevantFields = tabDataMap[tabId] || [];
+    const data = {};
+
+    relevantFields.forEach(field => {
+      if (allValues[field] !== undefined) {
+        data[field] = allValues[field];
+      }
+    });
+
+    return data;
+  };
+
+  // Function to handle saving individual tabs
+  const handleSaveTab = async (tabId, formik) => {
+    if (isValidating || isSaving) return;
+    setIsSaving(true);
+    setIsValidating(true);
+
+    const currentTab = tabs.find((tab) => tab.id === tabId);
+
+    try {
+      // Clear previous errors
+      formik.setErrors({});
+
+      if (currentTab?.validationSchema) {
+        // Validate only the current tab's fields
+        const currentValues = {};
+        Object.keys(currentTab.validationSchema.fields).forEach((key) => {
+          currentValues[key] = formik.values[key];
+        });
+
+        await currentTab.validationSchema.validate(currentValues, {
+          abortEarly: false,
+        });
+      }
+
+      // Prepare data for saving - extract only relevant tab data
+      const tabData = extractTabData(tabId, formik.values);
+
+      // Include clientId if we have it
+      const saveData = {
+        ...tabData,
+        _id: currentClientId // This will be null for new clients
+      };
+
+      const cleanData = sanitizeData(saveData);
+
+      const response = await dispatch(createClient(cleanData)).unwrap();
+
+      // If this was a new client creation, store the client ID
+      if (!currentClientId && response._id) {
+        setCurrentClientId(response._id);
+      }
+
+      // Mark tab as saved
+      if (!savedTabs.includes(tabId)) {
+        setSavedTabs([...savedTabs, tabId]);
+      }
+
+      // Update completed tabs
+      if (!completedTabs.includes(tabId)) {
+        setCompletedTabs([...completedTabs, tabId]);
+      }
+
+      toast.success(`${currentTab.label} saved successfully!`, {
+        position: "top-right",
+        autoClose: 3000,
+      });
+
+    } catch (error) {
+      console.group("Validation Error");
+      console.log("Raw error:", error);
+
+      const errorMessages = {};
+
+      if (error.name === "ValidationError") {
+        if (error.inner && Array.isArray(error.inner)) {
+          error.inner.forEach((err) => {
+            if (err.path && err.message) {
+              errorMessages[err.path] = err.message;
+            }
+          });
+        } else if (error.path && error.message) {
+          errorMessages[error.path] = error.message;
+        }
+      } else {
+        console.error("Non-validation error:", error);
+        errorMessages._error = error.message || "Validation failed";
+      }
+
+      if (Object.keys(errorMessages).length > 0) {
+        const touchedFields = {};
+        Object.keys(errorMessages).forEach((key) => {
+          touchedFields[key] = true;
+        });
+
+        // Show only the first error message
+        const firstErrorKey = Object.keys(errorMessages)[0];
+        toast.error(errorMessages[firstErrorKey], {
+          position: "top-right",
+          autoClose: 3000,
+        });
+
+        formik.setTouched(touchedFields);
+      }
+      console.log("Processed errors:", errorMessages);
+      console.groupEnd();
+
+      formik.setErrors(errorMessages);
+    } finally {
+      setIsSaving(false);
+      setIsValidating(false);
+    }
+  };
+
+  // Validation schemas (keep all your existing validation schemas)
   const createPersonalDataSchema = () =>
     Yup.object().shape({
       firstName: Yup.string().required("First name is required"),
       lastName: Yup.string().required("Last name is required"),
-      // phone1: Yup.string(),
-      // email: Yup.string().email("Please enter a valid email address"),
-      // dob: Yup.date()
-      //   .typeError("Please enter a valid date of birth")
-      //   .required("Date of birth is required"),
-      // caseManager: Yup.string().required("Case Manager is required"),
-      // clientType: Yup.string().required("Client Type is required"),
-      // ambulatory: Yup.string().required("Ambulatory is required"),
-      // physician: Yup.string().required("Physician is required"),
-      // locationId: Yup.string().required("Location is required"),
-
-      // serviceEnd: Yup.date()
-      //   .typeError("Please enter a valid end date")
-      //   .required("End date is required"),
-      // serviceStart: Yup.date()
-      //   .typeError("Please enter a valid start date")
-      //   .required("Start date is required"),
-
-      // ssn: Yup.string(),
-      // homeAddress1: Yup.string().required("Address is required"),
-      // homeCity: Yup.string().required("City is required"),
-      // homeState: Yup.string().required("State is required"),
-      // homeZip: Yup.string().required("Zip code is required"),
-      // homeStartAddressType: Yup.string().required("Address type is required"),
-      // homeEndAddressType: Yup.string().required("Address type is required"),
-      // billingAddress1: Yup.string(),
-      // vaccineRefused: Yup.boolean(),
-      // refusedReason: Yup.string(),
     });
 
   const createAttachmentsSchema = () =>
@@ -309,6 +450,7 @@ const ClientForm = () => {
         })
       ),
     });
+
   const createChartingSchema = () =>
     Yup.object().shape({
       careNotesAccess: Yup.string()
@@ -328,6 +470,7 @@ const ClientForm = () => {
         "Notes must be 500 characters or less"
       ),
     });
+
   const createCustomFieldsSchema = () =>
     Yup.object().shape({
       customFields: Yup.array().of(
@@ -337,6 +480,7 @@ const ClientForm = () => {
         })
       ),
     });
+
   const createDirectionSchema = () =>
     Yup.object().shape({
       directions: Yup.string().max(
@@ -356,6 +500,7 @@ const ClientForm = () => {
         "Special instructions must be 1000 characters or less"
       ),
     });
+
   const createContactValidationSchema = () =>
     Yup.object().shape({
       initialContactName: Yup.string(),
@@ -380,7 +525,7 @@ const ClientForm = () => {
           name: Yup.string().required("Name is required"),
           email: Yup.string()
             .email("Invalid email")
-            .required("Email is required"), // Added required
+            .required("Email is required"),
           phone: Yup.string()
             .required("Phone is required")
             .test(
@@ -398,7 +543,6 @@ const ClientForm = () => {
   const creatExclutionSchema = () =>
     Yup.object().shape({
       directions: Yup.string().max(1000, "Directions too long"),
-
       exclusions: Yup.array().of(
         Yup.object().shape({
           type: Yup.string().required("Type is required"),
@@ -483,6 +627,7 @@ const ClientForm = () => {
         })
       ),
     });
+
   const createAssignedNeedsSchema = () =>
     Yup.object().shape({
       assignedNeeds: Yup.array().of(
@@ -505,6 +650,7 @@ const ClientForm = () => {
         })
       ),
     });
+
   const createCarePlansSchema = () =>
     Yup.object().shape({
       carePlans: Yup.array().of(
@@ -531,7 +677,6 @@ const ClientForm = () => {
       marTimes: Yup.string(),
       requireMarSignature: Yup.boolean(),
       requirePrnReason: Yup.boolean(),
-
       preferences: Yup.array().of(
         Yup.object().shape({
           type: Yup.string(),
@@ -560,9 +705,9 @@ const ClientForm = () => {
         })
       ),
     });
+
   const createSuperVisorVisitSchema = () =>
     Yup.object().shape({
-      // super visor visits module
       supervisoryVisits: Yup.array().of(
         Yup.object().shape({
           visitType: Yup.string().required("Visit type is required"),
@@ -594,6 +739,7 @@ const ClientForm = () => {
       requireServiceOrder: Yup.boolean(),
       showInactiveServiceOrders: Yup.boolean(),
     });
+
   const createReminderSchema = () =>
     Yup.object().shape({
       reminders: Yup.array().of(
@@ -614,6 +760,7 @@ const ClientForm = () => {
         })
       ),
     });
+
   const createNotesSchema = () =>
     Yup.object().shape({
       notes: Yup.array().of(
@@ -630,6 +777,7 @@ const ClientForm = () => {
         })
       ),
     });
+
   const createVisitHistorySchema = () =>
     Yup.object().shape({
       visitHistory: Yup.array().of(
@@ -673,6 +821,7 @@ const ClientForm = () => {
         })
       ),
     });
+
   const createWelnessSchema = () =>
     Yup.object().shape({
       wellnessResponses: Yup.object().test(
@@ -773,7 +922,7 @@ const ClientForm = () => {
     {
       id: "Service",
       label: "Service Orders",
-      validationSchema: createSuperVisorVisitSchema(), // Note: This might need adjustment
+      validationSchema: createSuperVisorVisitSchema(),
     },
     {
       id: "Supervisory",
@@ -798,9 +947,6 @@ const ClientForm = () => {
       return { ...acc, ...tab.validationSchema.fields };
     }, {})
   );
-  useEffect(() => {
-    console.log(completedTabs);
-  }, [completedTabs]);
 
   const handleTabChange = async (tabId, formik) => {
     if (isValidating) return;
@@ -876,18 +1022,15 @@ const ClientForm = () => {
     }
   };
 
-  // Update your Next button onClick handler:
-
   const handleSubmit = (values, { setSubmitting }) => {
     console.log("Form submitted:", values);
-    // Use it before creating/updating
     const cleanData = sanitizeData(values);
 
     dispatch(createClient(cleanData))
-      .unwrap() // This ensures you catch only successful results or handle errors in catch
+      .unwrap()
       .then(() => {
         setSubmitting(false);
-        navigate("/generations.idb-sys/clients/listing"); // Redirect after success
+        navigate("/generations.idb-sys/clients/listing");
       })
       .catch((error) => {
         console.error("Error creating client:", error);
@@ -895,33 +1038,34 @@ const ClientForm = () => {
       });
   };
 
-  // In your parent component
-  const saveClient = (values, shouldOpen1500Form = false,clientId) => {
+  const saveClient = (values, shouldOpen1500Form = false) => {
     console.log("save Client submitted:", values);
     const cleanData = sanitizeData(values);
+
+    // Include clientId if we have it
+    if (currentClientId) {
+      cleanData._id = currentClientId;
+    }
+
     try {
-       if(clientId){
-            navigate(
-              `/generations.idb-sys/clients/form-1500B?client=${clientId}`
-            );
-          }
-          
       dispatch(createClient(cleanData))
         .unwrap()
         .then((res) => {
           console.log(res, "res");
-        
-            // Navigate to 1500 form with the new client ID
-            navigate(
-              `/generations.idb-sys/clients/form-1500B?client=${res._id}`
-            );
+          // Set client ID if this was a new client
+          if (!currentClientId) {
+            setCurrentClientId(res._id);
+          }
 
+          if (shouldOpen1500Form) {
+            navigate(`/generations.idb-sys/clients/form-1500B?client=${res._id}`);
+          }
         }).catch((error) => {
-        toast.error(error, {
-        position: "top-right",
-        autoClose: 3000,
-      });
-      });;
+          toast.error(error, {
+            position: "top-right",
+            autoClose: 3000,
+          });
+        });;
     } catch (error) {
       toast.error(error.message, {
         position: "top-right",
@@ -931,7 +1075,7 @@ const ClientForm = () => {
   };
 
   if (!initialValues) {
-    return <div>Loading...</div>; // Or a loading spinner
+    return <div>Loading...</div>;
   }
 
   return (
@@ -940,8 +1084,8 @@ const ClientForm = () => {
         initialValues={initialValues}
         validationSchema={validationSchema}
         onSubmit={handleSubmit}
-        validateOnChange={false} // Add this to prevent premature validation
-        validateOnBlur={false} // Add this to prevent premature validation
+        validateOnChange={false}
+        validateOnBlur={false}
       >
         {(formik) => (
           <Form>
@@ -949,6 +1093,7 @@ const ClientForm = () => {
               tabs={tabs}
               activeTab={activeTab}
               completedTabs={completedTabs}
+              savedTabs={savedTabs}
               onTabChange={(tabId) => handleTabChange(tabId, formik)}
               disabled={isValidating}
             />
@@ -959,62 +1104,164 @@ const ClientForm = () => {
                   formik={formik}
                   clientData={selectedClient}
                   saveClient={saveClient}
+                  onSaveTab={() => handleSaveTab("Personal", formik)}
+                  isSaved={savedTabs.includes("Personal")}
+                  isSaving={isSaving}
                 />
               )}
               {activeTab === "Attachments" && (
-                <Attachments formik={formik} clientData={selectedClient} />
+                <Attachments
+                  formik={formik}
+                  clientData={selectedClient}
+                  onSaveTab={() => handleSaveTab("Attachments", formik)}
+                  isSaved={savedTabs.includes("Attachments")}
+                  isSaving={isSaving}
+                />
               )}
               {activeTab === "Charting" && (
-                <Charting formik={formik} clientData={selectedClient} />
+                <Charting
+                  formik={formik}
+                  clientData={selectedClient}
+                  onSaveTab={() => handleSaveTab("Charting", formik)}
+                  isSaved={savedTabs.includes("Charting")}
+                  isSaving={isSaving}
+                />
               )}
               {activeTab === "Contacts" && (
                 <Contacts
                   formik={formik}
                   clientData={selectedClient}
                   completedTabs={completedTabs}
+                  onSaveTab={() => handleSaveTab("Contacts", formik)}
+                  isSaved={savedTabs.includes("Contacts")}
+                  isSaving={isSaving}
                 />
               )}
               {activeTab === "Custom" && (
-                <CustomFields formik={formik} clientData={selectedClient} />
+                <CustomFields
+                  formik={formik}
+                  clientData={selectedClient}
+                  onSaveTab={() => handleSaveTab("Custom", formik)}
+                  isSaved={savedTabs.includes("Custom")}
+                  isSaving={isSaving}
+                />
               )}
               {activeTab === "Directions" && (
-                <Directions formik={formik} clientData={selectedClient} />
+                <Directions
+                  formik={formik}
+                  clientData={selectedClient}
+                  onSaveTab={() => handleSaveTab("Directions", formik)}
+                  isSaved={savedTabs.includes("Directions")}
+                  isSaving={isSaving}
+                />
               )}
               {activeTab === "Exclusions" && (
-                <Exclusions formik={formik} clientData={selectedClient} />
+                <Exclusions
+                  formik={formik}
+                  clientData={selectedClient}
+                  onSaveTab={() => handleSaveTab("Exclusions", formik)}
+                  isSaved={savedTabs.includes("Exclusions")}
+                  isSaving={isSaving}
+                />
               )}
               {activeTab === "History" && (
-                <History formik={formik} clientData={selectedClient} />
+                <History
+                  formik={formik}
+                  clientData={selectedClient}
+                  onSaveTab={() => handleSaveTab("History", formik)}
+                  isSaved={savedTabs.includes("History")}
+                  isSaving={isSaving}
+                />
               )}
               {activeTab === "Interruptions" && (
-                <Interruptions formik={formik} clientData={selectedClient} />
+                <Interruptions
+                  formik={formik}
+                  clientData={selectedClient}
+                  onSaveTab={() => handleSaveTab("Interruptions", formik)}
+                  isSaved={savedTabs.includes("Interruptions")}
+                  isSaving={isSaving}
+                />
               )}
               {activeTab === "Invoicing" && (
-                <Invoicing formik={formik} clientData={selectedClient} />
+                <Invoicing
+                  formik={formik}
+                  clientData={selectedClient}
+                  onSaveTab={() => handleSaveTab("Invoicing", formik)}
+                  isSaved={savedTabs.includes("Invoicing")}
+                  isSaving={isSaving}
+                />
               )}
               {activeTab === "Needs" && (
-                <Needs formik={formik} clientData={selectedClient} />
+                <Needs
+                  formik={formik}
+                  clientData={selectedClient}
+                  onSaveTab={() => handleSaveTab("Needs", formik)}
+                  isSaved={savedTabs.includes("Needs")}
+                  isSaving={isSaving}
+                />
               )}
               {activeTab === "Notes" && (
-                <Notes formik={formik} clientData={selectedClient} />
+                <Notes
+                  formik={formik}
+                  clientData={selectedClient}
+                  onSaveTab={() => handleSaveTab("Notes", formik)}
+                  isSaved={savedTabs.includes("Notes")}
+                  isSaving={isSaving}
+                />
               )}
               {activeTab === "Plan" && (
-                <Plan formik={formik} clientData={selectedClient} />
+                <Plan
+                  formik={formik}
+                  clientData={selectedClient}
+                  onSaveTab={() => handleSaveTab("Plan", formik)}
+                  isSaved={savedTabs.includes("Plan")}
+                  isSaving={isSaving}
+                />
               )}
               {activeTab === "Reminders" && (
-                <Reminders formik={formik} clientData={selectedClient} />
+                <Reminders
+                  formik={formik}
+                  clientData={selectedClient}
+                  onSaveTab={() => handleSaveTab("Reminders", formik)}
+                  isSaved={savedTabs.includes("Reminders")}
+                  isSaving={isSaving}
+                />
               )}
               {activeTab === "Service" && (
-                <Service formik={formik} clientData={selectedClient} />
+                <Service
+                  formik={formik}
+                  clientData={selectedClient}
+                  onSaveTab={() => handleSaveTab("Service", formik)}
+                  isSaved={savedTabs.includes("Service")}
+                  isSaving={isSaving}
+                />
               )}
               {activeTab === "Supervisory" && (
-                <Supervisory formik={formik} clientData={selectedClient} />
+                <Supervisory
+                  formik={formik}
+                  clientData={selectedClient}
+                  onSaveTab={() => handleSaveTab("Supervisory", formik)}
+                  isSaved={savedTabs.includes("Supervisory")}
+                  isSaving={isSaving}
+                />
               )}
               {activeTab === "Visit" && (
-                <Visit formik={formik} clientData={selectedClient} />
+                <Visit
+                  formik={formik}
+                  clientData={selectedClient}
+                  onSaveTab={() => handleSaveTab("Visit", formik)}
+                  isSaved={savedTabs.includes("Visit")}
+                  isSaving={isSaving}
+                />
               )}
               {activeTab === "Wellness" && (
-                <Wellness formik={formik} clientData={selectedClient} />
+                <Wellness
+                  formik={formik}
+                  clientData={selectedClient}
+                  onSaveTab={() => handleSaveTab("Wellness", formik)}
+                  isSaved={savedTabs.includes("Wellness")}
+                  isSaving={isSaving}
+                />
               )}
             </div>
 
@@ -1068,7 +1315,9 @@ const ClientForm = () => {
                 <button
                   type="submit"
                   className="btn btn-primary"
-                  disabled={formik.isSubmitting}
+                  // disabled={formik.isSubmitting}
+                  disabled
+                  hidden
                 >
                   Submit
                 </button>

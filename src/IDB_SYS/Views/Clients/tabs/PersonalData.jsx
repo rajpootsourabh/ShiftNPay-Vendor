@@ -6,7 +6,9 @@ import {
   faInfoCircle,
   faPlus,
   faSyncAlt,
-  faPlusCircle
+  faPlusCircle,
+  faSave,
+  faCheck
 } from "@fortawesome/free-solid-svg-icons";
 import { FaPlus } from "react-icons/fa";
 import { useDispatch, useSelector } from "react-redux";
@@ -20,8 +22,7 @@ import { useNavigate } from "react-router-dom";
 import { fetchReasonByVendor } from "../../../../store/IDB_SYS/Clients/reasonSlice";
 import { fetchReferralSourcesByVendor } from "../../../../store/IDB_SYS/Clients/referralSourceSlice";
 
-
-const PersonalData = ({ formik, clientData, saveClient }) => {
+const PersonalData = ({ formik, clientData, saveClient, onSaveTab, isSaved, isSaving }) => {
   const { setFieldValue, values, submitForm } = useFormikContext();
   const [shouldOpen1500Form, setShouldOpen1500Form] = useState(false);
 
@@ -51,7 +52,6 @@ const PersonalData = ({ formik, clientData, saveClient }) => {
   const { physician } = useSelector((state) => state.physician);
   const { payor } = useSelector((state) => state.payor);
   const dispatch = useDispatch();
-
 
   useEffect(() => {
     dispatch(fetchCaseManagerByVendor({ limit: 100 }));
@@ -207,11 +207,9 @@ const PersonalData = ({ formik, clientData, saveClient }) => {
     ]);
   };
 
-
   const navigateUser = (url) => {
     window.open(`/generations.idb-sys/${url}`, "_blank");
   };
-
 
   return (
     <div className="tab-pane fade show active" id="Personal">
@@ -344,12 +342,9 @@ const PersonalData = ({ formik, clientData, saveClient }) => {
                       />
                     </div>
                   </div>
-
-
                 </div>
 
                 {/* Dates Section */}
-
                 <div className="row">
                   <div className="col-md-4">
                     <div className="form-group mb-3">
@@ -454,7 +449,6 @@ const PersonalData = ({ formik, clientData, saveClient }) => {
                     </div>
                   </div>
 
-
                   <div className="col-md-4">
                     <div className="form-group mb-3">
                       <label htmlFor="serviceStart" className="form-label">
@@ -498,9 +492,8 @@ const PersonalData = ({ formik, clientData, saveClient }) => {
                         className="invalid-feedback"
                       />
                     </div>
-
-
                   </div>
+
                   <div className="col-md-4">
                     <div className="form-group mb-3">
                       <label htmlFor="email" className="form-label">
@@ -522,6 +515,7 @@ const PersonalData = ({ formik, clientData, saveClient }) => {
                       />
                     </div>
                   </div>
+
                   <div className="col-md-4">
                     <div className="form-group mb-3">
                       <label htmlFor="webPassword" className="form-label">
@@ -539,6 +533,7 @@ const PersonalData = ({ formik, clientData, saveClient }) => {
                       />
                     </div>
                   </div>
+
                   <div className="col-md-4">
                     <div className="form-group mb-3">
                       <label
@@ -559,6 +554,7 @@ const PersonalData = ({ formik, clientData, saveClient }) => {
                       />
                     </div>
                   </div>
+
                   <div className="col-md-4">
                     <div className="form-check d-inline-block ml-3">
                       <label className="form-check-label" htmlFor="enable2FA">
@@ -610,6 +606,7 @@ const PersonalData = ({ formik, clientData, saveClient }) => {
               </div>
             </div>
           </div>
+
           {/* Additional Information Section */}
           <div className="frm-outer mt-3 row">
             {/* Case Management Section */}
@@ -626,7 +623,6 @@ const PersonalData = ({ formik, clientData, saveClient }) => {
                           Case Manager
                         </label>
                         <div className="col-sm-12 col-md-12 d-flex gap-2">
-
                           <Field
                             as="select"
                             name="caseManager"
@@ -662,6 +658,7 @@ const PersonalData = ({ formik, clientData, saveClient }) => {
                         </div>
                       </div>
                     </div>
+
                     <div className="col-md-6">
                       <div className="form-row">
                         <label
@@ -697,7 +694,7 @@ const PersonalData = ({ formik, clientData, saveClient }) => {
                       </div>
                     </div>
 
-                    {/* Referred By Field - Simplified */}
+                    {/* Referred By Field */}
                     <div className="col-md-6">
                       <div className="form-row">
                         <label htmlFor="referredBy" className="col-sm-4 col-form-label">
@@ -720,13 +717,11 @@ const PersonalData = ({ formik, clientData, saveClient }) => {
                               </option>
                             ))}
                           </Field>
-
                           <ErrorMessage
                             name="referredBy"
                             component="div"
                             className="invalid-feedback"
                           />
-
                           <div className="input-group-text gap-2">
                             <FontAwesomeIcon
                               icon={faPlusCircle}
@@ -742,7 +737,6 @@ const PersonalData = ({ formik, clientData, saveClient }) => {
                         </div>
                       </div>
                     </div>
-
 
                     <div className="col-md-6">
                       <div className="form-row">
@@ -1050,7 +1044,7 @@ const PersonalData = ({ formik, clientData, saveClient }) => {
                             <span className="mx-2">Weight</span>
                             <Field
                               type="text"
-                              name="priorityWeight"
+                              name="weight"
                               className="form-control"
                             />
                           </div>
@@ -1062,8 +1056,9 @@ const PersonalData = ({ formik, clientData, saveClient }) => {
               </div>
             </div>
           </div>
-          {/* Right Sidebar with Client Photo */}
         </div>
+
+        {/* Right Sidebar with Client Photo */}
         <div className="col-md-2">
           <div className="card">
             <div className="card-body text-center">
@@ -1115,13 +1110,13 @@ const PersonalData = ({ formik, clientData, saveClient }) => {
                 </label>
                 <Field
                   as="select"
-                  name="clientStatus"
+                  name="status"
                   id="clientStatus"
                   className="form-control"
                 >
-                  <option value="Active">Active</option>
-                  <option value="Inactive">Inactive</option>
-                  <option value="Pending">Pending</option>
+                  <option value="A">Active</option>
+                  <option value="I">Inactive</option>
+                  <option value="P">Pending</option>
                 </Field>
               </div>
 
@@ -1138,6 +1133,7 @@ const PersonalData = ({ formik, clientData, saveClient }) => {
             </div>
           </div>
         </div>
+
         {/* Address Section */}
         <div className="frm-outer mt-3">
           <div className="row">
@@ -2038,15 +2034,16 @@ const PersonalData = ({ formik, clientData, saveClient }) => {
                       </div>
 
                       <div className="form-group mb-3">
-                        <label htmlFor="alertNote" className="form-label">
-                          Alert Note
+                        <label htmlFor="alertText" className="form-label">
+                          Alert Text/Message
                         </label>
                         <Field
                           as="textarea"
-                          name="alertNote"
-                          id="alertNote"
+                          name="alertText"
+                          id="alertText"
                           rows="3"
                           className="form-control"
+                          placeholder="Enter the alert message to display..."
                         />
                       </div>
                     </TabPane>
@@ -2166,6 +2163,36 @@ const PersonalData = ({ formik, clientData, saveClient }) => {
               </div>
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* Bottom Save Button - Aligned to Right */}
+      <div className="mt-4 pt-3 border-top d-flex justify-content-end">
+        <div className="d-flex align-items-center gap-3">
+          {isSaved && (
+            <span className="text-success d-flex align-items-center">
+              <FontAwesomeIcon icon={faCheck} className="me-1" />
+              Saved successfully
+            </span>
+          )}
+          <button
+            type="button"
+            className="btn btn-success"
+            onClick={onSaveTab}
+            disabled={isSaving || formik.isSubmitting}
+          >
+            {isSaving ? (
+              <>
+                <span className="spinner-border spinner-border-sm me-2" />
+                Saving...
+              </>
+            ) : (
+              <>
+                <FontAwesomeIcon icon={faSave} className="me-2" />
+                Save
+              </>
+            )}
+          </button>
         </div>
       </div>
     </div>

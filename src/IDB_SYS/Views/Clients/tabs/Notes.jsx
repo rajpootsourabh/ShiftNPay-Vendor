@@ -2,8 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { useField, FieldArray } from 'formik';
 import { Form, Button, Table, Badge, Modal, Accordion, Row, Col } from 'react-bootstrap';
 import { FaSearch, FaFilter, FaStickyNote, FaEdit, FaTrash } from 'react-icons/fa';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faCheck, faSave } from '@fortawesome/free-solid-svg-icons';
 
-const Notes = ({ formik, clientData }) => {
+const Notes = ({ formik, clientData, onSaveTab, isSaved, isSaving }) => {
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingNote, setEditingNote] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -46,7 +48,7 @@ const Notes = ({ formik, clientData }) => {
   };
 
   const handleEditNote = (updatedNote) => {
-    const updatedNotes = formik.values.notes.map(note => 
+    const updatedNotes = formik.values.notes.map(note =>
       note.id === updatedNote.id ? updatedNote : note
     );
     formik.setFieldValue('notes', updatedNotes);
@@ -55,7 +57,7 @@ const Notes = ({ formik, clientData }) => {
 
   const filteredNotes = (formik.values.notes || []).filter(note => {
     const matchesSearch = note.content.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         note.category.toLowerCase().includes(searchTerm.toLowerCase());
+      note.category.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesPriority = priorityFilter === 'All' || note.priority === priorityFilter;
     const matchesCategory = categoryFilter === 'All' || note.category === categoryFilter;
     return matchesSearch && matchesPriority && matchesCategory;
@@ -63,7 +65,7 @@ const Notes = ({ formik, clientData }) => {
 
   return (
     <div className="notes-tab">
-      <h3>Client Notes</h3>
+
       <p className="text-muted">
         Document important observations, updates, and information about the client.
       </p>
@@ -131,11 +133,11 @@ const Notes = ({ formik, clientData }) => {
                     <Accordion.Header>
                       <div className="d-flex w-100 align-items-center">
                         <div className="flex-grow-1">
-                          <Badge 
+                          <Badge
                             bg={
                               note.priority === 'High' ? 'danger' :
-                              note.priority === 'Medium' ? 'warning' :
-                              'primary'
+                                note.priority === 'Medium' ? 'warning' :
+                                  'primary'
                             }
                             className="me-2"
                           >
@@ -220,7 +222,7 @@ const Notes = ({ formik, clientData }) => {
             <Form.Select
               name="category"
               value={newNote.category}
-              onChange={(e) => setNewNote({...newNote, category: e.target.value})}
+              onChange={(e) => setNewNote({ ...newNote, category: e.target.value })}
             >
               <option value="">Select category</option>
               {noteCategories.map(category => (
@@ -233,7 +235,7 @@ const Notes = ({ formik, clientData }) => {
             <Form.Select
               name="priority"
               value={newNote.priority}
-              onChange={(e) => setNewNote({...newNote, priority: e.target.value})}
+              onChange={(e) => setNewNote({ ...newNote, priority: e.target.value })}
             >
               <option value="">Select priority</option>
               <option value="High">High</option>
@@ -248,7 +250,7 @@ const Notes = ({ formik, clientData }) => {
               rows={5}
               name="content"
               value={newNote.content}
-              onChange={(e) => setNewNote({...newNote, content: e.target.value})}
+              onChange={(e) => setNewNote({ ...newNote, content: e.target.value })}
             />
           </Form.Group>
         </Modal.Body>
@@ -256,8 +258,8 @@ const Notes = ({ formik, clientData }) => {
           <Button variant="secondary" onClick={() => setShowAddModal(false)}>
             Cancel
           </Button>
-          <Button 
-            variant="primary" 
+          <Button
+            variant="primary"
             onClick={() => {
               if (newNote.category && newNote.priority && newNote.content) {
                 handleAddNote(newNote);
@@ -282,7 +284,7 @@ const Notes = ({ formik, clientData }) => {
                 <Form.Select
                   name="category"
                   value={editingNote.category}
-                  onChange={(e) => setEditingNote({...editingNote, category: e.target.value})}
+                  onChange={(e) => setEditingNote({ ...editingNote, category: e.target.value })}
                 >
                   <option value="">Select category</option>
                   {noteCategories.map(category => (
@@ -295,7 +297,7 @@ const Notes = ({ formik, clientData }) => {
                 <Form.Select
                   name="priority"
                   value={editingNote.priority}
-                  onChange={(e) => setEditingNote({...editingNote, priority: e.target.value})}
+                  onChange={(e) => setEditingNote({ ...editingNote, priority: e.target.value })}
                 >
                   <option value="">Select priority</option>
                   <option value="High">High</option>
@@ -310,7 +312,7 @@ const Notes = ({ formik, clientData }) => {
                   rows={5}
                   name="content"
                   value={editingNote.content}
-                  onChange={(e) => setEditingNote({...editingNote, content: e.target.value})}
+                  onChange={(e) => setEditingNote({ ...editingNote, content: e.target.value })}
                 />
               </Form.Group>
             </>
@@ -320,8 +322,8 @@ const Notes = ({ formik, clientData }) => {
           <Button variant="secondary" onClick={() => setEditingNote(null)}>
             Cancel
           </Button>
-          <Button 
-            variant="primary" 
+          <Button
+            variant="primary"
             onClick={() => {
               if (editingNote.category && editingNote.priority && editingNote.content) {
                 handleEditNote(editingNote);
@@ -332,6 +334,36 @@ const Notes = ({ formik, clientData }) => {
           </Button>
         </Modal.Footer>
       </Modal>
+
+      {/* Bottom Save Button - Aligned to Right */}
+      <div className="mt-4 pt-3 border-top d-flex justify-content-end">
+        <div className="d-flex align-items-center gap-3">
+          {isSaved && (
+            <span className="text-success d-flex align-items-center">
+              <FontAwesomeIcon icon={faCheck} className="me-1" />
+              Saved successfully
+            </span>
+          )}
+          <button
+            type="button"
+            className="btn btn-success"
+            onClick={onSaveTab}
+            disabled={isSaving || formik.isSubmitting}
+          >
+            {isSaving ? (
+              <>
+                <span className="spinner-border spinner-border-sm me-2" />
+                Saving...
+              </>
+            ) : (
+              <>
+                <FontAwesomeIcon icon={faSave} className="me-2" />
+                Save
+              </>
+            )}
+          </button>
+        </div>
+      </div>
     </div>
   );
 };

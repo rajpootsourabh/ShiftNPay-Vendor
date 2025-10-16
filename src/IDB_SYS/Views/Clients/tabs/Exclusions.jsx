@@ -1,8 +1,11 @@
 import React, { useEffect } from 'react';
 import { useField, FieldArray } from 'formik';
 import { Form, Row, Col, Button } from 'react-bootstrap';
+import { FaSave } from 'react-icons/fa';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faCheck, faSave } from '@fortawesome/free-solid-svg-icons';
 
-const Exclusions = ({ formik, clientData }) => {
+const Exclusions = ({ formik, clientData, onSaveTab, isSaved, isSaving }) => {
   // Initialize exclusions and preferences from API when clientData is available
   useEffect(() => {
     if (clientData) {
@@ -20,6 +23,7 @@ const Exclusions = ({ formik, clientData }) => {
 
   return (
     <div className="exclusions-tab">
+
       <h3>Exclusions & Preferences</h3>
       <p className="text-muted">
         Specify any services or caregivers the client should be excluded from, and any special preferences.
@@ -242,6 +246,36 @@ const Exclusions = ({ formik, clientData }) => {
           </div>
         )}
       </FieldArray>
+
+     {/* Bottom Save Button - Aligned to Right */}
+           <div className="mt-4 pt-3 border-top d-flex justify-content-end">
+             <div className="d-flex align-items-center gap-3">
+               {isSaved && (
+                 <span className="text-success d-flex align-items-center">
+                   <FontAwesomeIcon icon={faCheck} className="me-1" />
+                   Saved successfully
+                 </span>
+               )}
+               <button
+                 type="button"
+                 className="btn btn-success"
+                 onClick={onSaveTab}
+                 disabled={isSaving || formik.isSubmitting}
+               >
+                 {isSaving ? (
+                   <>
+                     <span className="spinner-border spinner-border-sm me-2" />
+                     Saving...
+                   </>
+                 ) : (
+                   <>
+                     <FontAwesomeIcon icon={faSave} className="me-2" />
+                     Save
+                   </>
+                 )}
+               </button>
+             </div>
+           </div>
     </div>
   );
 };

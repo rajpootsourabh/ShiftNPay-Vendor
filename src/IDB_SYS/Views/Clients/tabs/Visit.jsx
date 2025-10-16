@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useField, FieldArray } from 'formik';
 import { Form, Button, Table, Badge, Modal, Alert, Row, Col } from 'react-bootstrap';
 import { FaHistory, FaSearch, FaFilter, FaCalendarAlt } from 'react-icons/fa';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faCheck, faSave } from '@fortawesome/free-solid-svg-icons';
 
-const Visit = ({ formik }) => {
+const Visit = ({ formik, clientData, onSaveTab, isSaved, isSaving }) => {
   const [showFilters, setShowFilters] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [dateRange, setDateRange] = useState({
@@ -13,6 +15,13 @@ const Visit = ({ formik }) => {
   const [serviceTypeFilter, setServiceTypeFilter] = useState('All');
   const [statusFilter, setStatusFilter] = useState('All');
   const [selectedVisit, setSelectedVisit] = useState(null);
+
+  // Initialize visit history from API when clientData is available
+  useEffect(() => {
+    if (clientData && clientData.visitHistory && Array.isArray(clientData.visitHistory)) {
+      formik.setFieldValue('visitHistory', clientData.visitHistory);
+    }
+  }, [clientData, formik.setFieldValue]);
 
   // Extract unique service types from visits
   const serviceTypes = [
@@ -31,25 +40,25 @@ const Visit = ({ formik }) => {
 
   const filteredVisits = formik.values.visitHistory?.filter(visit => {
     // Search term filter
-    const matchesSearch = 
+    const matchesSearch =
       visit.notes?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       visit.caregiverName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       visit.serviceType?.toLowerCase().includes(searchTerm.toLowerCase());
-    
+
     // Date range filter
     const visitDate = new Date(visit.visitDate);
     const matchesDateRange = (
-      (!dateRange.start || visitDate >= new Date(dateRange.start)) && 
+      (!dateRange.start || visitDate >= new Date(dateRange.start)) &&
       (!dateRange.end || visitDate <= new Date(dateRange.end)));
-    
+
     // Service type filter
-    const matchesServiceType = 
+    const matchesServiceType =
       serviceTypeFilter === 'All' || visit.serviceType === serviceTypeFilter;
-    
+
     // Status filter
-    const matchesStatus = 
+    const matchesStatus =
       statusFilter === 'All' || visit.status === statusFilter;
-    
+
     return matchesSearch && matchesDateRange && matchesServiceType && matchesStatus;
   }) || [];
 
@@ -71,7 +80,6 @@ const Visit = ({ formik }) => {
 
   return (
     <div className="visit-tab">
-      <h3>Visit History</h3>
       <p className="text-muted">
         Track all completed and scheduled visits for the client.
       </p>
@@ -212,10 +220,10 @@ const Visit = ({ formik }) => {
                   <Badge
                     bg={
                       visit.status === 'Completed' ? 'success' :
-                      visit.status === 'Missed' ? 'danger' :
-                      visit.status === 'Cancelled' ? 'secondary' :
-                      visit.status === 'In Progress' ? 'primary' :
-                      'warning'
+                        visit.status === 'Missed' ? 'danger' :
+                          visit.status === 'Cancelled' ? 'secondary' :
+                            visit.status === 'In Progress' ? 'primary' :
+                              'warning'
                     }
                   >
                     {visit.status}
@@ -266,10 +274,10 @@ const Visit = ({ formik }) => {
                       <Badge
                         bg={
                           selectedVisit.status === 'Completed' ? 'success' :
-                          selectedVisit.status === 'Missed' ? 'danger' :
-                          selectedVisit.status === 'Cancelled' ? 'secondary' :
-                          selectedVisit.status === 'In Progress' ? 'primary' :
-                          'warning'
+                            selectedVisit.status === 'Missed' ? 'danger' :
+                              selectedVisit.status === 'Cancelled' ? 'secondary' :
+                                selectedVisit.status === 'In Progress' ? 'primary' :
+                                  'warning'
                         }
                       >
                         {selectedVisit.status}
@@ -376,6 +384,36 @@ const Visit = ({ formik }) => {
           </Button>
         </Modal.Footer>
       </Modal>
+
+      {/* Bottom Save Button - Aligned to Right */}
+      <div className="mt-4 pt-3 border-top d-flex justify-content-end">
+        <div className="d-flex align-items-center gap-3">
+          {isSaved && (
+            <span className="text-success d-flex align-items-center">
+              <FontAwesomeIcon icon={faCheck} className="me-1" />
+              Saved successfully
+            </span>
+          )}
+          <button
+            type="button"
+            className="btn btn-success"
+            onClick={onSaveTab}
+            disabled={isSaving || formik.isSubmitting}
+          >
+            {isSaving ? (
+              <>
+                <span className="spinner-border spinner-border-sm me-2" />
+                Saving...
+              </>
+            ) : (
+              <>
+                <FontAwesomeIcon icon={faSave} className="me-2" />
+                Save
+              </>
+            )}
+          </button>
+        </div>
+      </div>
     </div>
   );
 };

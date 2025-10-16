@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { ErrorMessage, Field, FieldArray, useFormikContext } from "formik";
-import { FaPlus, FaTrash, FaEdit } from "react-icons/fa";
+import { FaPlus, FaTrash, FaEdit, FaSave } from "react-icons/fa";
 import image1 from './../../../assets/images/wound/01-thumb.jpeg';
 import image2 from './../../../assets/images/wound/02-thumb.jpeg';
 import image3 from './../../../assets/images/wound/03-thumb.jpeg';
@@ -10,15 +10,17 @@ import image6 from './../../../assets/images/wound/06-thumb.jpeg';
 import image7 from './../../../assets/images/wound/07-thumb.jpeg';
 import image8 from './../../../assets/images/wound/08-thumb.jpeg';
 import mainImg from './../../../assets/images/wound/download.png';
+import { faCheck, faSave } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 
-const Charting = ({ isEditMode, clientData }) => {
+const Charting = ({ formik, clientData, onSaveTab, isSaved, isSaving }) => {
   const { values, setFieldValue } = useFormikContext();
   const [showWoundForm, setShowWoundForm] = useState(false);
   const [selectedWoundIndex, setSelectedWoundIndex] = useState(null);
 
   // Initialize charting values from API data when in edit mode
   useEffect(() => {
-    if (isEditMode && clientData) {
+    if (clientData) {
       // Set charting-related fields from API
       const chartingFields = [
         'careNotesAccess',
@@ -26,7 +28,7 @@ const Charting = ({ isEditMode, clientData }) => {
         'clientLoginNotes',
         'chartingNotes'
       ];
-      
+
       chartingFields.forEach(field => {
         if (clientData[field] !== undefined) {
           setFieldValue(field, clientData[field]);
@@ -38,7 +40,7 @@ const Charting = ({ isEditMode, clientData }) => {
         setFieldValue('wounds', clientData.wounds);
       }
     }
-  }, [isEditMode, clientData, setFieldValue]);
+  }, [clientData, setFieldValue]);
 
   const handleCareNotesChange = (e) => {
     setFieldValue('careNotesAccess', e.target.value);
@@ -63,6 +65,7 @@ const Charting = ({ isEditMode, clientData }) => {
 
   return (
     <div className="charting-container">
+
       <div className="mb-4">
         <h3>Charting Configuration</h3>
         <p className="text-muted">Configure documentation settings for this client</p>
@@ -401,6 +404,36 @@ const Charting = ({ isEditMode, clientData }) => {
         </div>
       </div>
 
+      {/* Bottom Save Button - Aligned to Right */}
+      <div className="mt-4 pt-3 border-top d-flex justify-content-end">
+        <div className="d-flex align-items-center gap-3">
+          {isSaved && (
+            <span className="text-success d-flex align-items-center">
+              <FontAwesomeIcon icon={faCheck} className="me-1" />
+              Saved successfully
+            </span>
+          )}
+          <button
+            type="button"
+            className="btn btn-success"
+            onClick={onSaveTab}
+            disabled={isSaving || formik.isSubmitting}
+          >
+            {isSaving ? (
+              <>
+                <span className="spinner-border spinner-border-sm me-2" />
+                Saving...
+              </>
+            ) : (
+              <>
+                <FontAwesomeIcon icon={faSave} className="me-2" />
+                Save
+              </>
+            )}
+          </button>
+        </div>
+      </div>
+
       {/* Wound Detail Modal */}
       {showWoundForm && (
         <WoundDetailModal
@@ -502,7 +535,7 @@ const WoundDetailModal = ({ woundIndex, wound, onClose, onSave }) => {
             <h5 className="modal-title">{wound ? 'Edit Wound' : 'New Wound'}</h5>
             <button type="button" className="btn-close" onClick={onClose}></button>
           </div>
-          
+
           <div className="modal-body">
             <div className="wound-form frm-outer">
               <div className="row">
@@ -537,7 +570,7 @@ const WoundDetailModal = ({ woundIndex, wound, onClose, onSave }) => {
                   <div className="form-row">
                     <label htmlFor="description" className="col-sm-2 col-form-label">Description</label>
                     <textarea
-                      style={{width: '100%'}}
+                      style={{ width: '100%' }}
                       name="description"
                       value={formData.description}
                       onChange={handleInputChange}
@@ -550,21 +583,21 @@ const WoundDetailModal = ({ woundIndex, wound, onClose, onSave }) => {
                 <div className="wound-location">
                   <ul className="list-unstyled d-flex flex-wrap justify-content-center">
                     {woundLocations.map(location => (
-                      <li 
-                        key={location.id} 
+                      <li
+                        key={location.id}
                         className={selectedLocation === location.name ? 'selected' : ''}
                         onClick={() => handleImageSelect(location.name, location.src)}
                         style={{ cursor: 'pointer', margin: '2px' }}
                       >
-                        <img 
-                          src={location.src} 
-                          alt={location.alt} 
-                          style={{ 
-                            width: '80px', 
-                            height: '80px', 
+                        <img
+                          src={location.src}
+                          alt={location.alt}
+                          style={{
+                            width: '80px',
+                            height: '80px',
                             border: selectedLocation === location.name ? '2px solid red' : '1px solid #ddd',
                             borderRadius: '4px'
-                          }} 
+                          }}
                         />
                       </li>
                     ))}
@@ -575,17 +608,17 @@ const WoundDetailModal = ({ woundIndex, wound, onClose, onSave }) => {
               <div className="col-md-12 mt-3">
                 <div className="row">
                   <div className="col-md-6">
-                    <div 
+                    <div
                       style={{ position: 'relative', cursor: 'crosshair' }}
                       onClick={handleImageClick}
                     >
-                      <img 
-                        src={selectedImage || mainImg} 
-                        alt="Body diagram" 
-                        style={{ width: '100%' }} 
+                      <img
+                        src={selectedImage || mainImg}
+                        alt="Body diagram"
+                        style={{ width: '100%' }}
                       />
                       {markerPosition && (
-                        <div 
+                        <div
                           style={{
                             position: 'absolute',
                             left: markerPosition.x - 10,
@@ -645,7 +678,7 @@ const WoundDetailModal = ({ woundIndex, wound, onClose, onSave }) => {
                     <div className="form-row">
                       <label htmlFor="drainage" className="col-sm-2 col-form-label">Drainage</label>
                       <textarea
-                        style={{width: '100%'}}
+                        style={{ width: '100%' }}
                         name="drainage"
                         value={formData.drainage}
                         onChange={handleInputChange}
@@ -714,7 +747,7 @@ const WoundDetailModal = ({ woundIndex, wound, onClose, onSave }) => {
                     <div className="form-row">
                       <label htmlFor="comment" className="col-sm-2 col-form-label">Comment</label>
                       <textarea
-                        style={{width: '100%'}}
+                        style={{ width: '100%' }}
                         name="comment"
                         value={formData.comment}
                         onChange={handleInputChange}
@@ -724,9 +757,9 @@ const WoundDetailModal = ({ woundIndex, wound, onClose, onSave }) => {
                 </div>
               </div>
 
-              <div style={{display: 'flex', justifyContent: 'right'}} className="col-md-12 mt-3 mb-3">
+              <div style={{ display: 'flex', justifyContent: 'right' }} className="col-md-12 mt-3 mb-3">
                 <button className="custom-btn px-3" type="button" onClick={handleSave}>Save</button>
-                <button className="custom-btn px-3" type="button" onClick={onClose} style={{marginLeft: '10px'}}>Close</button>
+                <button className="custom-btn px-3" type="button" onClick={onClose} style={{ marginLeft: '10px' }}>Close</button>
               </div>
             </div>
           </div>

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Form,
   Button,
@@ -11,14 +11,34 @@ import {
   ProgressBar,
 } from "react-bootstrap";
 import { FaHeartbeat, FaChartLine, FaClipboardList } from "react-icons/fa";
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faCheck, faSave } from '@fortawesome/free-solid-svg-icons';
 
-const Wellness = ({ formik }) => {
+const Wellness = ({ formik, clientData, onSaveTab, isSaved, isSaving }) => {
   const [showAssessmentModal, setShowAssessmentModal] = useState(false);
   const [selectedGroup, setSelectedGroup] = useState("All");
   const [currentQuestion, setCurrentQuestion] = useState(null);
   const [showTrendModal, setShowTrendModal] = useState(false);
   const [trendQuestion, setTrendQuestion] = useState(null);
   const [editingResponse, setEditingResponse] = useState(null);
+
+  // Initialize wellness data from API when clientData is available
+  useEffect(() => {
+    if (clientData) {
+      // Set wellness-related fields from API
+      const wellnessFields = [
+        'wellnessResponses',
+        'wellnessHistory',
+        'wellnessGroupFilter'
+      ];
+
+      wellnessFields.forEach(field => {
+        if (clientData[field] !== undefined) {
+          formik.setFieldValue(field, clientData[field]);
+        }
+      });
+    }
+  }, [clientData, formik.setFieldValue]);
 
   // Sample wellness questions grouped by category
   const wellnessGroups = [
@@ -122,8 +142,8 @@ const Wellness = ({ formik }) => {
       return lastValue > prevValue
         ? "improving"
         : lastValue < prevValue
-        ? "declining"
-        : "stable";
+          ? "declining"
+          : "stable";
     }
 
     // For scale options, compare positions
@@ -193,15 +213,16 @@ const Wellness = ({ formik }) => {
 
   return (
     <div className="wellness-tab">
-      <h3>Wellness Assessment</h3>
       <p className="text-muted">
         Track and monitor client health indicators and wellness metrics.
       </p>
+
       {formik.errors.wellnessResponses && (
         <Alert variant="danger" className="mt-3">
           {formik.errors.wellnessResponses}
         </Alert>
       )}
+
       <Row className="mb-3">
         <Col md={6}>
           <Form.Select
@@ -285,8 +306,8 @@ const Wellness = ({ formik }) => {
                             trend === "improving"
                               ? "success"
                               : trend === "declining"
-                              ? "danger"
-                              : "info"
+                                ? "danger"
+                                : "info"
                           }
                         >
                           {trend}
@@ -464,24 +485,23 @@ const Wellness = ({ formik }) => {
                     </div>
                     {i > 0 && (
                       <div
-                        className={`text-${
-                          calculateTrend(trendQuestion.id) === "improving"
+                        className={`text-${calculateTrend(trendQuestion.id) === "improving"
                             ? "success"
                             : calculateTrend(trendQuestion.id) === "declining"
-                            ? "danger"
-                            : "muted"
-                        }`}
+                              ? "danger"
+                              : "muted"
+                          }`}
                       >
                         {typeof record.value === "number" &&
-                        typeof getResponseHistory(trendQuestion.id)[i - 1]
-                          .value === "number"
+                          typeof getResponseHistory(trendQuestion.id)[i - 1]
+                            .value === "number"
                           ? record.value >
                             getResponseHistory(trendQuestion.id)[i - 1].value
                             ? "↑ Improved"
                             : record.value <
                               getResponseHistory(trendQuestion.id)[i - 1].value
-                            ? "↓ Declined"
-                            : "→ No change"
+                              ? "↓ Declined"
+                              : "→ No change"
                           : "→ No change"}
                       </div>
                     )}
@@ -520,8 +540,8 @@ const Wellness = ({ formik }) => {
                         calculateTrend(trendQuestion.id) === "improving"
                           ? "success"
                           : calculateTrend(trendQuestion.id) === "declining"
-                          ? "danger"
-                          : "info"
+                            ? "danger"
+                            : "info"
                       }
                     >
                       {calculateTrend(trendQuestion.id)}
@@ -538,6 +558,36 @@ const Wellness = ({ formik }) => {
           </Button>
         </Modal.Footer>
       </Modal>
+
+      {/* Bottom Save Button - Aligned to Right */}
+      <div className="mt-4 pt-3 border-top d-flex justify-content-end">
+        <div className="d-flex align-items-center gap-3">
+          {isSaved && (
+            <span className="text-success d-flex align-items-center">
+              <FontAwesomeIcon icon={faCheck} className="me-1" />
+              Saved successfully
+            </span>
+          )}
+          <button
+            type="button"
+            className="btn btn-success"
+            onClick={onSaveTab}
+            disabled={isSaving || formik.isSubmitting}
+          >
+            {isSaving ? (
+              <>
+                <span className="spinner-border spinner-border-sm me-2" />
+                Saving...
+              </>
+            ) : (
+              <>
+                <FontAwesomeIcon icon={faSave} className="me-2" />
+                Save
+              </>
+            )}
+          </button>
+        </div>
+      </div>
     </div>
   );
 };

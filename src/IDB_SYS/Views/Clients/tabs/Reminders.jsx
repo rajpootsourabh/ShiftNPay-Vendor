@@ -2,8 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { useField, FieldArray } from 'formik';
 import { Form, Button, Table, Badge, Modal, Alert, Row, Col } from 'react-bootstrap';
 import { FaBell, FaCalendarCheck, FaExclamationTriangle } from 'react-icons/fa';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faCheck, faSave } from '@fortawesome/free-solid-svg-icons';
 
-const Reminders = ({ formik, clientData }) => {
+const Reminders = ({ formik, clientData, onSaveTab, isSaved, isSaving }) => {
   const [showModal, setShowModal] = useState(false);
   const [editIndex, setEditIndex] = useState(null);
   const [deleteIndex, setDeleteIndex] = useState(null);
@@ -41,7 +43,7 @@ const Reminders = ({ formik, clientData }) => {
 
   const handleSaveReminder = () => {
     const dueDateTime = `${newReminder.dueDate}T${newReminder.dueTime}:00`;
-    
+
     const reminderData = {
       ...newReminder,
       dueDate: dueDateTime,
@@ -62,7 +64,7 @@ const Reminders = ({ formik, clientData }) => {
         reminderData
       ]);
     }
-    
+
     setShowModal(false);
     setEditIndex(null);
     setNewReminder({
@@ -112,7 +114,7 @@ const Reminders = ({ formik, clientData }) => {
 
   return (
     <div className="reminders-tab">
-      <h3>Care Reminders</h3>
+
       <p className="text-muted">
         Set and manage important reminders for client care and follow-ups.
       </p>
@@ -265,7 +267,7 @@ const Reminders = ({ formik, clientData }) => {
             <Form.Select
               name="type"
               value={newReminder.type}
-              onChange={(e) => setNewReminder({...newReminder, type: e.target.value})}
+              onChange={(e) => setNewReminder({ ...newReminder, type: e.target.value })}
             >
               <option value="">Select type</option>
               {reminderTypes.map(type => (
@@ -282,7 +284,7 @@ const Reminders = ({ formik, clientData }) => {
                   type="date"
                   name="dueDate"
                   value={newReminder.dueDate}
-                  onChange={(e) => setNewReminder({...newReminder, dueDate: e.target.value})}
+                  onChange={(e) => setNewReminder({ ...newReminder, dueDate: e.target.value })}
                 />
               </Col>
               <Col md={4}>
@@ -290,7 +292,7 @@ const Reminders = ({ formik, clientData }) => {
                   type="time"
                   name="dueTime"
                   value={newReminder.dueTime}
-                  onChange={(e) => setNewReminder({...newReminder, dueTime: e.target.value})}
+                  onChange={(e) => setNewReminder({ ...newReminder, dueTime: e.target.value })}
                 />
               </Col>
             </Row>
@@ -301,7 +303,7 @@ const Reminders = ({ formik, clientData }) => {
             <Form.Select
               name="priority"
               value={newReminder.priority}
-              onChange={(e) => setNewReminder({...newReminder, priority: e.target.value})}
+              onChange={(e) => setNewReminder({ ...newReminder, priority: e.target.value })}
             >
               {priorityLevels.map(level => (
                 <option key={level.value} value={level.value}>{level.label}</option>
@@ -316,7 +318,7 @@ const Reminders = ({ formik, clientData }) => {
               rows={3}
               name="description"
               value={newReminder.description}
-              onChange={(e) => setNewReminder({...newReminder, description: e.target.value})}
+              onChange={(e) => setNewReminder({ ...newReminder, description: e.target.value })}
               placeholder="Enter reminder details..."
             />
           </Form.Group>
@@ -328,7 +330,7 @@ const Reminders = ({ formik, clientData }) => {
               rows={2}
               name="notes"
               value={newReminder.notes}
-              onChange={(e) => setNewReminder({...newReminder, notes: e.target.value})}
+              onChange={(e) => setNewReminder({ ...newReminder, notes: e.target.value })}
               placeholder="Additional notes (optional)"
             />
           </Form.Group>
@@ -337,8 +339,8 @@ const Reminders = ({ formik, clientData }) => {
           <Button variant="secondary" onClick={() => setShowModal(false)}>
             Cancel
           </Button>
-          <Button 
-            variant="primary" 
+          <Button
+            variant="primary"
             onClick={handleSaveReminder}
             disabled={!newReminder.type || !newReminder.description || !newReminder.dueDate}
           >
@@ -366,8 +368,8 @@ const Reminders = ({ formik, clientData }) => {
           <Button variant="secondary" onClick={() => setDeleteIndex(null)}>
             Cancel
           </Button>
-          <Button 
-            variant="danger" 
+          <Button
+            variant="danger"
             onClick={() => {
               if (deleteIndex !== null) {
                 formik.setFieldValue(
@@ -382,6 +384,36 @@ const Reminders = ({ formik, clientData }) => {
           </Button>
         </Modal.Footer>
       </Modal>
+
+      {/* Bottom Save Button - Aligned to Right */}
+      <div className="mt-4 pt-3 border-top d-flex justify-content-end">
+        <div className="d-flex align-items-center gap-3">
+          {isSaved && (
+            <span className="text-success d-flex align-items-center">
+              <FontAwesomeIcon icon={faCheck} className="me-1" />
+              Saved successfully
+            </span>
+          )}
+          <button
+            type="button"
+            className="btn btn-success"
+            onClick={onSaveTab}
+            disabled={isSaving || formik.isSubmitting}
+          >
+            {isSaving ? (
+              <>
+                <span className="spinner-border spinner-border-sm me-2" />
+                Saving...
+              </>
+            ) : (
+              <>
+                <FontAwesomeIcon icon={faSave} className="me-2" />
+                Save
+              </>
+            )}
+          </button>
+        </div>
+      </div>
     </div>
   );
 };

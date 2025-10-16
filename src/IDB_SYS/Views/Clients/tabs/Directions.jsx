@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { ErrorMessage, Field, useFormikContext } from 'formik';
-import { FaDirections, FaMapMarkerAlt, FaCopy, FaCheck } from 'react-icons/fa';
+import { FaDirections, FaMapMarkerAlt, FaCopy, FaCheck, FaSave } from 'react-icons/fa';
 import { Button, Modal } from 'react-bootstrap';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faCheck, faSave } from '@fortawesome/free-solid-svg-icons';
 
-const Directions = ({ formik, clientData }) => {
+const Directions = ({ formik, clientData, onSaveTab, isSaved, isSaving }) => {
   const { values, setFieldValue } = useFormikContext();
   const [showMapModal, setShowMapModal] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -19,7 +21,7 @@ const Directions = ({ formik, clientData }) => {
         'accessInstructions',
         'specialInstructions'
       ];
-      
+
       directionsFields.forEach(field => {
         if (clientData[field] !== undefined) {
           setFieldValue(field, clientData[field]);
@@ -45,6 +47,7 @@ const Directions = ({ formik, clientData }) => {
 
   return (
     <div className="directions-container">
+
       <div className="mb-4">
         <h3>Directions & Miscellaneous Notes</h3>
         <p className="text-muted">Enter special directions and notes for this client</p>
@@ -149,6 +152,36 @@ const Directions = ({ formik, clientData }) => {
         </div>
       </div>
 
+      {/* Bottom Save Button - Aligned to Right */}
+      <div className="mt-4 pt-3 border-top d-flex justify-content-end">
+        <div className="d-flex align-items-center gap-3">
+          {isSaved && (
+            <span className="text-success d-flex align-items-center">
+              <FontAwesomeIcon icon={faCheck} className="me-1" />
+              Saved successfully
+            </span>
+          )}
+          <button
+            type="button"
+            className="btn btn-success"
+            onClick={onSaveTab}
+            disabled={isSaving || formik.isSubmitting}
+          >
+            {isSaving ? (
+              <>
+                <span className="spinner-border spinner-border-sm me-2" />
+                Saving...
+              </>
+            ) : (
+              <>
+                <FontAwesomeIcon icon={faSave} className="me-2" />
+                Save
+              </>
+            )}
+          </button>
+        </div>
+      </div>
+
       {/* Map Modal */}
       <Modal show={showMapModal} onHide={() => setShowMapModal(false)} size="lg">
         <Modal.Header closeButton>
@@ -163,7 +196,7 @@ const Directions = ({ formik, clientData }) => {
               <FaMapMarkerAlt size={48} className="text-danger mb-3" />
               <p>Map integration would show here</p>
               <p className="text-muted">
-                {clientData?.homeAddress1 || 'Client Address'}, 
+                {clientData?.homeAddress1 || 'Client Address'},
                 {clientData?.homeCity ? ` ${clientData.homeCity},` : ''}
                 {clientData?.homeState ? ` ${clientData.homeState}` : ''}
                 {clientData?.homeZip ? ` ${clientData.homeZip}` : ''}

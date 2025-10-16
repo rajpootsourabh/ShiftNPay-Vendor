@@ -1,8 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Form, Button, Table, Badge, Modal, Alert, Row, Col } from 'react-bootstrap';
 import { FaUserMd, FaCalendarPlus, FaFileSignature } from 'react-icons/fa';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faCheck, faSave } from '@fortawesome/free-solid-svg-icons';
 
-const Supervisory = ({ formik }) => {
+
+const Supervisory = ({ formik, clientData, onSaveTab, isSaved, isSaving }) => {
   const [showModal, setShowModal] = useState(false);
   const [editIndex, setEditIndex] = useState(null);
   const [deleteIndex, setDeleteIndex] = useState(null);
@@ -21,6 +24,13 @@ const Supervisory = ({ formik }) => {
     completedDate: '',
     findings: ''
   });
+
+  // Initialize supervisory visits from API when clientData is available
+  useEffect(() => {
+    if (clientData && clientData.supervisoryVisits && Array.isArray(clientData.supervisoryVisits)) {
+      formik.setFieldValue('supervisoryVisits', clientData.supervisoryVisits);
+    }
+  }, [clientData, formik.setFieldValue]);
 
   const visitTypes = [
     'Skilled Nurse Supervision',
@@ -56,7 +66,7 @@ const Supervisory = ({ formik }) => {
         visitData
       ]);
     }
-    
+
     setShowModal(false);
     setEditIndex(null);
     setNewVisit({
@@ -106,7 +116,7 @@ const Supervisory = ({ formik }) => {
     setShowModal(true);
   };
 
-  const filteredVisits = formik.values.supervisoryVisits?.filter(visit => 
+  const filteredVisits = formik.values.supervisoryVisits?.filter(visit =>
     showCompleted || visit.status !== 'completed'
   ) || [];
 
@@ -117,9 +127,10 @@ const Supervisory = ({ formik }) => {
   const overdueVisits = formik.values.supervisoryVisits?.filter(
     visit => visit.status === 'scheduled' && new Date(visit.visitDate) < new Date()
   ).length || 0;
+
   return (
     <div className="supervisory-tab">
-      <h3>Supervisory Visits</h3>
+
       <p className="text-muted">
         Track clinical supervision and oversight visits for quality care assurance.
       </p>
@@ -183,7 +194,7 @@ const Supervisory = ({ formik }) => {
                 v => v.id === visit.id
               );
               const isOverdue = visit.status === 'scheduled' && new Date(visit.visitDate) < new Date();
-              
+
               return (
                 <tr key={visit.id} className={isOverdue ? 'table-warning' : ''}>
                   <td>
@@ -244,7 +255,7 @@ const Supervisory = ({ formik }) => {
       )}
 
       {/* Supervisory Visit Modal */}
-       <Modal show={showModal} onHide={() => setShowModal(false)} size="lg">
+      <Modal show={showModal} onHide={() => setShowModal(false)} size="lg">
         <Modal.Header closeButton>
           <Modal.Title>
             {editIndex !== null ? 'Edit Supervisory Visit' : 'Schedule New Visit'}
@@ -258,7 +269,7 @@ const Supervisory = ({ formik }) => {
                 <Form.Select
                   name="visitType"
                   value={newVisit.visitType}
-                  onChange={(e) => setNewVisit({...newVisit, visitType: e.target.value})}
+                  onChange={(e) => setNewVisit({ ...newVisit, visitType: e.target.value })}
                 >
                   <option value="">Select visit type</option>
                   {visitTypes.map(type => (
@@ -273,7 +284,7 @@ const Supervisory = ({ formik }) => {
                 <Form.Select
                   name="status"
                   value={newVisit.status}
-                  onChange={(e) => setNewVisit({...newVisit, status: e.target.value})}
+                  onChange={(e) => setNewVisit({ ...newVisit, status: e.target.value })}
                 >
                   {statusOptions.map(status => (
                     <option key={status.value} value={status.value}>
@@ -293,7 +304,7 @@ const Supervisory = ({ formik }) => {
                   type="datetime-local"
                   name="visitDate"
                   value={newVisit.visitDate}
-                  onChange={(e) => setNewVisit({...newVisit, visitDate: e.target.value})}
+                  onChange={(e) => setNewVisit({ ...newVisit, visitDate: e.target.value })}
                 />
               </Form.Group>
             </Col>
@@ -304,7 +315,7 @@ const Supervisory = ({ formik }) => {
                   type="text"
                   name="supervisorName"
                   value={newVisit.supervisorName}
-                  onChange={(e) => setNewVisit({...newVisit, supervisorName: e.target.value})}
+                  onChange={(e) => setNewVisit({ ...newVisit, supervisorName: e.target.value })}
                   placeholder="Enter supervisor's name"
                 />
               </Form.Group>
@@ -321,7 +332,7 @@ const Supervisory = ({ formik }) => {
                   min="15"
                   step="15"
                   value={newVisit.duration}
-                  onChange={(e) => setNewVisit({...newVisit, duration: parseInt(e.target.value) || 30})}
+                  onChange={(e) => setNewVisit({ ...newVisit, duration: parseInt(e.target.value) || 30 })}
                 />
               </Form.Group>
             </Col>
@@ -331,7 +342,7 @@ const Supervisory = ({ formik }) => {
                 <Form.Select
                   name="location"
                   value={newVisit.location}
-                  onChange={(e) => setNewVisit({...newVisit, location: e.target.value})}
+                  onChange={(e) => setNewVisit({ ...newVisit, location: e.target.value })}
                 >
                   <option value="">Select location</option>
                   <option value="client_home">Client's Home</option>
@@ -350,7 +361,7 @@ const Supervisory = ({ formik }) => {
               rows={3}
               name="purpose"
               value={newVisit.purpose}
-              onChange={(e) => setNewVisit({...newVisit, purpose: e.target.value})}
+              onChange={(e) => setNewVisit({ ...newVisit, purpose: e.target.value })}
               placeholder="Describe the purpose and objectives of this visit..."
             />
           </Form.Group>
@@ -362,37 +373,37 @@ const Supervisory = ({ formik }) => {
               rows={2}
               name="notes"
               value={newVisit.notes}
-              onChange={(e) => setNewVisit({...newVisit, notes: e.target.value})}
+              onChange={(e) => setNewVisit({ ...newVisit, notes: e.target.value })}
               placeholder="Any additional notes..."
             />
           </Form.Group>
 
-            <Row>
-              <Col md={6}>
-                <Form.Group className="mb-3">
-                  <Form.Label>Completed Date</Form.Label>
-                  <Form.Control
-                    type="datetime-local"
-                    name="completedDate"
-                    value={newVisit.completedDate}
-                    onChange={(e) => setNewVisit({...newVisit, completedDate: e.target.value})}
-                  />
-                </Form.Group>
-              </Col>
-              <Col md={6}>
-                <Form.Group className="mb-3">
-                  <Form.Label>Findings/Outcome</Form.Label>
-                  <Form.Control
-                    as="textarea"
-                    rows={2}
-                    name="findings"
-                    value={newVisit.findings}
-                    onChange={(e) => setNewVisit({...newVisit, findings: e.target.value})}
-                    placeholder="Visit findings and outcomes..."
-                  />
-                </Form.Group>
-              </Col>
-            </Row>
+          <Row>
+            <Col md={6}>
+              <Form.Group className="mb-3">
+                <Form.Label>Completed Date</Form.Label>
+                <Form.Control
+                  type="datetime-local"
+                  name="completedDate"
+                  value={newVisit.completedDate}
+                  onChange={(e) => setNewVisit({ ...newVisit, completedDate: e.target.value })}
+                />
+              </Form.Group>
+            </Col>
+            <Col md={6}>
+              <Form.Group className="mb-3">
+                <Form.Label>Findings/Outcome</Form.Label>
+                <Form.Control
+                  as="textarea"
+                  rows={2}
+                  name="findings"
+                  value={newVisit.findings}
+                  onChange={(e) => setNewVisit({ ...newVisit, findings: e.target.value })}
+                  placeholder="Visit findings and outcomes..."
+                />
+              </Form.Group>
+            </Col>
+          </Row>
 
           <Form.Group className="mb-3">
             <Form.Check
@@ -400,7 +411,7 @@ const Supervisory = ({ formik }) => {
               label="Require Follow-up"
               name="requireFollowUp"
               checked={newVisit.requireFollowUp}
-              onChange={(e) => setNewVisit({...newVisit, requireFollowUp: e.target.checked})}
+              onChange={(e) => setNewVisit({ ...newVisit, requireFollowUp: e.target.checked })}
             />
           </Form.Group>
 
@@ -412,7 +423,7 @@ const Supervisory = ({ formik }) => {
                 rows={2}
                 name="followUpActions"
                 value={newVisit.followUpActions}
-                onChange={(e) => setNewVisit({...newVisit, followUpActions: e.target.value})}
+                onChange={(e) => setNewVisit({ ...newVisit, followUpActions: e.target.value })}
                 placeholder="Describe required follow-up actions..."
               />
             </Form.Group>
@@ -436,8 +447,74 @@ const Supervisory = ({ formik }) => {
           </Button>
         </Modal.Footer>
       </Modal>
-        </div>
-      );
-    };
 
-    export default Supervisory;
+      {/* Delete Confirmation Modal */}
+      <Modal show={deleteIndex !== null} onHide={() => setDeleteIndex(null)} centered>
+        <Modal.Header closeButton>
+          <Modal.Title>Confirm Deletion</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          Are you sure you want to delete this supervisory visit?
+          {deleteIndex !== null && formik.values.supervisoryVisits[deleteIndex] && (
+            <div className="mt-3 p-2 bg-light border rounded">
+              <strong>Type:</strong> {formik.values.supervisoryVisits[deleteIndex].visitType || 'Unknown'}<br />
+              <strong>Date:</strong> {formik.values.supervisoryVisits[deleteIndex].visitDate ? new Date(formik.values.supervisoryVisits[deleteIndex].visitDate).toLocaleString() : 'No date'}<br />
+              <strong>Supervisor:</strong> {formik.values.supervisoryVisits[deleteIndex].supervisorName || 'Not specified'}
+            </div>
+          )}
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setDeleteIndex(null)}>
+            Cancel
+          </Button>
+          <Button
+            variant="danger"
+            onClick={() => {
+              if (deleteIndex !== null) {
+                formik.setFieldValue(
+                  'supervisoryVisits',
+                  formik.values.supervisoryVisits.filter((_, idx) => idx !== deleteIndex)
+                );
+                setDeleteIndex(null);
+              }
+            }}
+          >
+            Delete Visit
+          </Button>
+        </Modal.Footer>
+      </Modal>
+
+      {/* Bottom Save Button - Aligned to Right */}
+      <div className="mt-4 pt-3 border-top d-flex justify-content-end">
+        <div className="d-flex align-items-center gap-3">
+          {isSaved && (
+            <span className="text-success d-flex align-items-center">
+              <FontAwesomeIcon icon={faCheck} className="me-1" />
+              Saved successfully
+            </span>
+          )}
+          <button
+            type="button"
+            className="btn btn-success"
+            onClick={onSaveTab}
+            disabled={isSaving || formik.isSubmitting}
+          >
+            {isSaving ? (
+              <>
+                <span className="spinner-border spinner-border-sm me-2" />
+                Saving...
+              </>
+            ) : (
+              <>
+                <FontAwesomeIcon icon={faSave} className="me-2" />
+                Save
+              </>
+            )}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default Supervisory;

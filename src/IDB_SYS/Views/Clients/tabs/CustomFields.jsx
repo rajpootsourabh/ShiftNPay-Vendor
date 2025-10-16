@@ -1,18 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { ErrorMessage, Field, FieldArray, useFormikContext } from 'formik';
-import { FaPlus, FaTrash, FaEdit, FaInfoCircle, FaSearch } from 'react-icons/fa';
+import { FaPlus, FaTrash, FaEdit, FaInfoCircle, FaSearch, FaSave } from 'react-icons/fa';
 import { fetchCustomFieldsByVendor } from '../../../../store/IDB_SYS/Clients/customFieldsSlice';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faCheck, faSave } from '@fortawesome/free-solid-svg-icons';
 
-const CustomFields = ({ formik, clientData }) => {
+const CustomFields = ({ formik, clientData, onSaveTab, isSaved, isSaving }) => {
   const dispatch = useDispatch();
   const { values, setFieldValue } = useFormikContext();
   const [editingIndex, setEditingIndex] = useState(null);
   const [currentDescription, setCurrentDescription] = useState('');
-  
+
   // Get fields from Redux store
   const { customFields: existingFields, loading, error } = useSelector((state) => state.customFields);
-  
+
   // Fetch fields on component mount
   useEffect(() => {
     dispatch(fetchCustomFieldsByVendor());
@@ -27,7 +29,7 @@ const CustomFields = ({ formik, clientData }) => {
         const formattedCustomFields = clientData.customFields.map(apiField => {
           // Find the corresponding field definition from existingFields
           const fieldDefinition = existingFields.find(f => f._id === apiField.field);
-          
+
           return {
             field: apiField.field,
             customField: fieldDefinition ? fieldDefinition.customField : apiField.field,
@@ -35,9 +37,9 @@ const CustomFields = ({ formik, clientData }) => {
             value: apiField.value || ''
           };
         });
-        
+
         setFieldValue('customFields', formattedCustomFields);
-      } 
+      }
       // If no custom fields from API but we have existing fields, initialize with empty values
       else if (existingFields.length > 0 && (!values.customFields || values.customFields.length === 0)) {
         const initialFields = existingFields.map(field => ({
@@ -181,6 +183,36 @@ const CustomFields = ({ formik, clientData }) => {
               </div>
             )}
           </FieldArray>
+        </div>
+      </div>
+
+      {/* Bottom Save Button - Aligned to Right */}
+      <div className="mt-4 pt-3 border-top d-flex justify-content-end">
+        <div className="d-flex align-items-center gap-3">
+          {isSaved && (
+            <span className="text-success d-flex align-items-center">
+              <FontAwesomeIcon icon={faCheck} className="me-1" />
+              Saved successfully
+            </span>
+          )}
+          <button
+            type="button"
+            className="btn btn-success"
+            onClick={onSaveTab}
+            disabled={isSaving || formik.isSubmitting}
+          >
+            {isSaving ? (
+              <>
+                <span className="spinner-border spinner-border-sm me-2" />
+                Saving...
+              </>
+            ) : (
+              <>
+                <FontAwesomeIcon icon={faSave} className="me-2" />
+                Save
+              </>
+            )}
+          </button>
         </div>
       </div>
     </div>

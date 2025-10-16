@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useField, FieldArray } from 'formik';
 import { Form, Row, Col, Button, Table, Badge, Modal, Accordion } from 'react-bootstrap';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faCheck, faSave } from '@fortawesome/free-solid-svg-icons';
 
-const Needs = ({ formik, clientData }) => {
+const Needs = ({ formik, clientData, onSaveTab, isSaved, isSaving }) => {
   const [showMasterList, setShowMasterList] = useState(false);
   const [selectedNeed, setSelectedNeed] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -14,7 +16,7 @@ const Needs = ({ formik, clientData }) => {
       if (clientData.assignedNeeds && Array.isArray(clientData.assignedNeeds)) {
         formik.setFieldValue('assignedNeeds', clientData.assignedNeeds);
       }
-      
+
       // Set master list from API if available, otherwise use sample data
       if (clientData.needsMasterList && Array.isArray(clientData.needsMasterList)) {
         formik.setFieldValue('needsMasterList', clientData.needsMasterList);
@@ -56,7 +58,7 @@ const Needs = ({ formik, clientData }) => {
 
   return (
     <div className="needs-tab">
-      <h3>Client Needs Assessment</h3>
+
       <p className="text-muted">
         Document and manage the client's care requirements and service needs.
       </p>
@@ -121,8 +123,8 @@ const Needs = ({ formik, clientData }) => {
                         </Badge>
                         <Badge bg={
                           need.priority === 'High' ? 'danger' :
-                          need.priority === 'Medium' ? 'warning' :
-                          'primary'
+                            need.priority === 'Medium' ? 'warning' :
+                              'primary'
                         }>
                           {need.priority}
                         </Badge>
@@ -321,6 +323,36 @@ const Needs = ({ formik, clientData }) => {
           </Button>
         </Modal.Footer>
       </Modal>
+
+      {/* Bottom Save Button - Aligned to Right */}
+      <div className="mt-4 pt-3 border-top d-flex justify-content-end">
+        <div className="d-flex align-items-center gap-3">
+          {isSaved && (
+            <span className="text-success d-flex align-items-center">
+              <FontAwesomeIcon icon={faCheck} className="me-1" />
+              Saved successfully
+            </span>
+          )}
+          <button
+            type="button"
+            className="btn btn-success"
+            onClick={onSaveTab}
+            disabled={isSaving || formik.isSubmitting}
+          >
+            {isSaving ? (
+              <>
+                <span className="spinner-border spinner-border-sm me-2" />
+                Saving...
+              </>
+            ) : (
+              <>
+                <FontAwesomeIcon icon={faSave} className="me-2" />
+                Save
+              </>
+            )}
+          </button>
+        </div>
+      </div>
     </div>
   );
 };
