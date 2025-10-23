@@ -446,7 +446,7 @@ const ClientForm = () => {
       attachments: Yup.array().of(
         Yup.object().shape({
           description: Yup.string().required("Description is required"),
-          file: Yup.mixed().required("File is required"),
+          // file: Yup.mixed().required("File is required"),
         })
       ),
     });

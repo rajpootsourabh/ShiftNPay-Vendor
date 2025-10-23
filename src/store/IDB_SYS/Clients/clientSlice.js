@@ -1,22 +1,29 @@
-import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import axios from 'axios';
+import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
+import axios from "axios";
 
 const BaseUrl = process.env.REACT_APP_BASH_URL;
 
 const getHeaders = () => ({
-  Authorization: `Bearer ${localStorage.getItem('shinpay-vendor-token')}`,
-  'Content-Type': 'application/json',
+  Authorization: `Bearer ${localStorage.getItem("shinpay-vendor-token")}`,
+  "Content-Type": "application/json",
 });
 
 export const fetchClientByVendor = createAsyncThunk(
-  'client/fetchByVendor',
+  "client/fetchByVendor",
   async (_payload, { getState, rejectWithValue }) => {
     try {
       const { client } = getState();
       const { page, limit } = client.pagination;
-      const { search, status, location, clientType, dateStart, dateEnd, dateField } = client.filters;
-      console.log(client.filters,'client.filter')
-      // Build query string with all filters
+      const {
+        search,
+        status,
+        location,
+        clientType,
+        dateStart,
+        dateEnd,
+        dateField,
+      } = client.filters;
+
       const queryParams = new URLSearchParams({
         page: page.toString(),
         limit: limit.toString(),
@@ -26,11 +33,11 @@ export const fetchClientByVendor = createAsyncThunk(
         ...(clientType && { clientType }),
         ...(dateStart && { dateStart }),
         ...(dateEnd && { dateEnd }),
-        ...(dateField && { dateField })
+        ...(dateField && { dateField }),
       }).toString();
 
-      const res = await axios.get(`${BaseUrl}/vendor/client?${queryParams}`, { 
-        headers: getHeaders() 
+      const res = await axios.get(`${BaseUrl}/vendor/client?${queryParams}`, {
+        headers: getHeaders(),
       });
 
       return res.data;
@@ -41,7 +48,7 @@ export const fetchClientByVendor = createAsyncThunk(
 );
 
 export const fetchClientById = createAsyncThunk(
-  'client/fetchById',
+  "client/fetchById",
   async (id, { rejectWithValue }) => {
     try {
       const res = await axios.get(`${BaseUrl}/vendor/client/single/${id}`, {
@@ -55,7 +62,7 @@ export const fetchClientById = createAsyncThunk(
 );
 
 export const createClient = createAsyncThunk(
-  'client/create',
+  "client/create",
   async (data, { rejectWithValue }) => {
     try {
       const res = await axios.post(`${BaseUrl}/vendor/client`, data, {
@@ -63,16 +70,13 @@ export const createClient = createAsyncThunk(
       });
       return res.data;
     } catch (err) {
-      if (err.response && err.response.data && err.response.data.message) {
-        return rejectWithValue(err.response.data.message);
-      }
-      return rejectWithValue(err.message);
+      return rejectWithValue(err.response?.data?.message || err.message);
     }
   }
 );
 
 export const updateClient = createAsyncThunk(
-  'client/update',
+  "client/update",
   async ({ id, data }, { rejectWithValue }) => {
     try {
       const res = await axios.put(`${BaseUrl}/vendor/client/${id}`, data, {
@@ -80,16 +84,13 @@ export const updateClient = createAsyncThunk(
       });
       return res.data;
     } catch (err) {
-      if (err.response && err.response.data && err.response.data.message) {
-        return rejectWithValue(err.response.data.message);
-      }
-      return rejectWithValue(err.message);
+      return rejectWithValue(err.response?.data?.message || err.message);
     }
   }
 );
 
 export const deleteClient = createAsyncThunk(
-  'client/delete',
+  "client/delete",
   async (id, { rejectWithValue }) => {
     try {
       await axios.delete(`${BaseUrl}/vendor/client/${id}`, {
@@ -102,8 +103,45 @@ export const deleteClient = createAsyncThunk(
   }
 );
 
+export const uploadClientAttachment = createAsyncThunk(
+  "client/uploadAttachment",
+  async ({ clientId, formData }, { rejectWithValue }) => {
+    try {
+      const headers = {
+        Authorization: `Bearer ${localStorage.getItem("shinpay-vendor-token")}`,
+      };
+
+      const res = await axios.post(
+        `${BaseUrl}/vendor/client/${clientId}/upload`,
+        formData,
+        { headers }
+      );
+
+      return { clientId, attachment: res.data };
+    } catch (err) {
+      return rejectWithValue(err.response?.data?.message || err.message);
+    }
+  }
+);
+
+export const deleteClientAttachment = createAsyncThunk(
+  "client/deleteAttachment",
+  async ({ clientId, attachmentId }, { rejectWithValue }) => {
+    try {
+      await axios.delete(
+        `${BaseUrl}/vendor/client/${clientId}/attachment/${attachmentId}`,
+        { headers: getHeaders() }
+      );
+
+      return { clientId, attachmentId };
+    } catch (err) {
+      return rejectWithValue(err.response?.data?.message || err.message);
+    }
+  }
+);
+
 const clientSlice = createSlice({
-  name: 'client',
+  name: "client",
   initialState: {
     clients: [],
     selectedClient: null,
@@ -115,15 +153,15 @@ const clientSlice = createSlice({
       pages: 0,
       limit: 10,
     },
-  filters: {
-    search: '',
-    status: '',
-    location: '',
-    clientType: '',
-    dateStart: '',
-    dateEnd: '',
-    dateField: 'createdAt'
-  },
+    filters: {
+      search: "",
+      status: "",
+      location: "",
+      clientType: "",
+      dateStart: "",
+      dateEnd: "",
+      dateField: "createdAt",
+    },
   },
   reducers: {
     setStatusFilter: (state, action) => {
@@ -149,21 +187,18 @@ const clientSlice = createSlice({
     },
     clearAllFilters: (state) => {
       state.filters = {
-        search: '',
-        status: '',
-        location: '',
-        clientType: '',
-        dateStart: '',
-        dateEnd: '',
-        dateField: 'createdAt'
+        search: "",
+        status: "",
+        location: "",
+        clientType: "",
+        dateStart: "",
+        dateEnd: "",
+        dateField: "createdAt",
       };
       state.pagination.page = 1;
     },
     clearError: (state) => {
       state.error = null;
-    },
-    setClient: (state, action) => {
-      state.clients = action.payload;
     },
     setPage: (state, action) => {
       state.pagination.page = action.payload;
@@ -173,7 +208,7 @@ const clientSlice = createSlice({
     },
     setSearch: (state, action) => {
       state.filters.search = action.payload;
-      state.pagination.page = 1; // Reset to first page when search changes
+      state.pagination.page = 1;
     },
     clearSelectedClient: (state) => {
       state.selectedClient = null;
@@ -181,38 +216,125 @@ const clientSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
+      // Fetch clients
       .addCase(fetchClientByVendor.fulfilled, (state, action) => {
         state.clients = action.payload.clients;
         state.pagination = action.payload.pagination;
       })
+      
+      // File upload
+      .addCase(uploadClientAttachment.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(uploadClientAttachment.fulfilled, (state, action) => {
+        state.loading = false;
+        const { clientId, attachment } = action.payload;
+
+        // Update selected client if it matches
+        if (state.selectedClient && state.selectedClient._id === clientId) {
+          if (!state.selectedClient.attachments) {
+            state.selectedClient.attachments = [];
+          }
+          const existingIndex = state.selectedClient.attachments.findIndex(
+            (att) =>
+              att._id === attachment._id || att.fileName === attachment.fileName
+          );
+          if (existingIndex === -1) {
+            state.selectedClient.attachments.push(attachment);
+          } else {
+            state.selectedClient.attachments[existingIndex] = attachment;
+          }
+        }
+
+        // Update in clients list if present
+        const clientIndex = state.clients.findIndex((c) => c._id === clientId);
+        if (clientIndex !== -1) {
+          if (!state.clients[clientIndex].attachments) {
+            state.clients[clientIndex].attachments = [];
+          }
+          const existingIndex = state.clients[
+            clientIndex
+          ].attachments.findIndex(
+            (att) =>
+              att._id === attachment._id || att.fileName === attachment.fileName
+          );
+          if (existingIndex === -1) {
+            state.clients[clientIndex].attachments.push(attachment);
+          } else {
+            state.clients[clientIndex].attachments[existingIndex] = attachment;
+          }
+        }
+      })
+      .addCase(uploadClientAttachment.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+
+      // Delete attachment
+      .addCase(deleteClientAttachment.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(deleteClientAttachment.fulfilled, (state, action) => {
+        state.loading = false;
+        const { clientId, attachmentId } = action.payload;
+
+        // Remove from selected client
+        if (state.selectedClient && state.selectedClient._id === clientId) {
+          state.selectedClient.attachments =
+            state.selectedClient.attachments.filter(
+              (att) => att._id !== attachmentId
+            );
+        }
+
+        // Remove from clients list
+        const clientIndex = state.clients.findIndex((c) => c._id === clientId);
+        if (clientIndex !== -1) {
+          state.clients[clientIndex].attachments = state.clients[
+            clientIndex
+          ].attachments.filter((att) => att._id !== attachmentId);
+        }
+      })
+      .addCase(deleteClientAttachment.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+
+      // Other CRUD operations
       .addCase(fetchClientById.fulfilled, (state, action) => {
         state.selectedClient = action.payload;
       })
       .addCase(createClient.fulfilled, (state, action) => {
         state.clients.unshift(action.payload);
+        if (!state.selectedClient) {
+          state.selectedClient = action.payload;
+        }
       })
       .addCase(updateClient.fulfilled, (state, action) => {
-        const index = state.clients.findIndex(c => c._id === action.payload._id);
+        const index = state.clients.findIndex(
+          (c) => c._id === action.payload._id
+        );
         if (index !== -1) state.clients[index] = action.payload;
+
+        if (
+          state.selectedClient &&
+          state.selectedClient._id === action.payload._id
+        ) {
+          state.selectedClient = action.payload;
+        }
       })
       .addCase(deleteClient.fulfilled, (state, action) => {
-        state.clients = state.clients.filter(c => c._id !== action.payload);
+        state.clients = state.clients.filter((c) => c._id !== action.payload);
+        if (
+          state.selectedClient &&
+          state.selectedClient._id === action.payload
+        ) {
+          state.selectedClient = null;
+        }
       })
+      
+      // Generic error handling for all async thunks
       .addMatcher(
-        (action) => action.type.startsWith('client/') && action.type.endsWith('/pending'),
-        (state) => {
-          state.loading = true;
-          state.error = null;
-        }
-      )
-      .addMatcher(
-        (action) => action.type.startsWith('client/') && action.type.endsWith('/fulfilled'),
-        (state) => {
-          state.loading = false;
-        }
-      )
-      .addMatcher(
-        (action) => action.type.startsWith('client/') && action.type.endsWith('/rejected'),
+        (action) => action.type.startsWith("client/") && action.type.endsWith("/rejected"),
         (state, action) => {
           state.loading = false;
           state.error = action.payload || action.error.message;
@@ -221,11 +343,7 @@ const clientSlice = createSlice({
   },
 });
 
-export const { 
-  setClient, 
-  setPage, 
-  setLimit, 
-  setSearch,
+export const {
   setStatusFilter,
   setLocationFilter,
   setClientTypeFilter,
@@ -233,7 +351,10 @@ export const {
   setDateField,
   clearAllFilters,
   clearError,
-  clearSelectedClient 
+  setPage,
+  setLimit,
+  setSearch,
+  clearSelectedClient,
 } = clientSlice.actions;
 
 export default clientSlice.reducer;
