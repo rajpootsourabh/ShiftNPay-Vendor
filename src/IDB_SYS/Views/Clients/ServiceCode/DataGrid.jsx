@@ -44,7 +44,7 @@ const ServiceCodeSchema = Yup.object().shape({
 
 const DataGrid = () => {
   const dispatch = useDispatch();
-  const { serviceCode, loading } = useSelector((state) => state.serviceCode);
+  const { serviceCode, loading, pagination } = useSelector((state) => state.serviceCode);
   const [showModal, setShowModal] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
   const [viewData, setViewData] = useState(null);
@@ -77,8 +77,36 @@ const DataGrid = () => {
   });
 
   useEffect(() => {
-    dispatch(fetchServiceCodeByVendor());
+    dispatch(fetchServiceCodeByVendor({ page: 1, limit: 10 }));
   }, [dispatch]);
+
+  const handlePageChange = (newPage) => {
+    if (newPage >= 1 && newPage <= pagination.pages) {
+      dispatch(fetchServiceCodeByVendor({ page: newPage, limit: 10 }));
+    }
+  };
+
+  const getBillingLabel = (value) => {
+  if (value === "Hourly" || value === "Flat Rate") return value;
+
+  // normalize boolean strings
+  if (
+    value === true ||
+    (typeof value === "string" && value.toLowerCase() === "true")
+  ) {
+    return "Flat Rate";
+  }
+
+  if (
+    value === false ||
+    (typeof value === "string" && value.toLowerCase() === "false")
+  ) {
+    return "Hourly";
+  }
+
+  return "";
+};
+
 
   const handleDelete = (id) => {
     Swal.fire({
@@ -89,7 +117,9 @@ const DataGrid = () => {
       confirmButtonText: "Yes, delete it!",
     }).then((result) => {
       if (result.isConfirmed) {
-        dispatch(deleteServiceCode(id));
+        dispatch(deleteServiceCode(id)).then(() => {
+          dispatch(fetchServiceCodeByVendor({ page: pagination.page, limit: 10 }));
+        });
       }
     });
   };
@@ -116,12 +146,14 @@ const DataGrid = () => {
         setShowModal(false);
         setEditMode(false);
         resetForm();
+        dispatch(fetchServiceCodeByVendor({ page: pagination.page, limit: 10 }));
       });
     } else {
       dispatch(createServiceCode(values)).then(() => {
         setSubmitting(false);
         setShowModal(false);
         resetForm();
+        dispatch(fetchServiceCodeByVendor({ page: 1, limit: 10 }));
       });
     }
   };
@@ -154,7 +186,7 @@ const DataGrid = () => {
                         type: "Service",
                         cost: 0,
                         status: "Active",
-                        billedPerVisit: "Hourly",
+                        billedPerVisit: "",
                         adpIncludeInAdjustedDed: false,
                         overridePaychexFlex: false,
                         payplusExport: {
@@ -227,9 +259,18 @@ const DataGrid = () => {
                   </td>
                   <td>{row.description}</td>
                   <td>{row.type}</td>
-                  <td>${row.cost.toFixed(2)}</td>
-                  <td>{row.status}</td>
-                  <td>{row.billedPerVisit}</td>
+                  <td>${Number(row.cost || 0).toFixed(2)}</td>
+                  <td>
+                  {row.status === "I"
+                    ? "Inactive"
+                    : row.status === "A"
+                    ? "Active"
+                    : row.status}
+                 </td>
+
+           <td>{getBillingLabel(row.billedPerVisit)}</td>
+
+
                 </tr>
               ))
             ) : (
@@ -242,6 +283,7 @@ const DataGrid = () => {
           </tbody>
         </table>
       </div>
+
 
       {showModal && (
         <div className="modal show d-block" tabIndex="-1">
@@ -420,8 +462,8 @@ const DataGrid = () => {
                             </label>
                           </div>
                         </div>
-                          <div className="col-md-4">
-                            <h6 className="mb-3">Payplus Export</h6>
+                        <div className="col-md-4">
+                          <h6 className="mb-3">Payplus Export</h6>
                           <div className="mb-3">
                             <label className="form-label small fw-semibold">
                               Regular Code
@@ -473,9 +515,9 @@ const DataGrid = () => {
                               className="form-control form-control-sm"
                             />
                           </div>
-                          </div>
+                        </div>
                         <div className="col-md-4">
-                          
+
 
                           <h6 className="mb-3">CMS 1500 Fields</h6>
                           <div className="mb-3">
@@ -641,7 +683,7 @@ const DataGrid = () => {
                         ${viewData.cost?.toFixed(2) || "0.00"}
                       </div>
                     </div>
-                     <h6 className="mb-3">Payplus Export</h6>
+                    <h6 className="mb-3">Payplus Export</h6>
                     <div className="mb-3">
                       <label className="form-label small fw-semibold">
                         Regular Code
@@ -726,7 +768,7 @@ const DataGrid = () => {
                     </div>
                   </div>
                   <div className="col-md-4">
-                   
+
                     <h6 className="mb-3">CMS 1500 Fields</h6>
                     <div className="mb-3">
                       <label className="form-label small fw-semibold">

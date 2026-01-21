@@ -10,16 +10,28 @@ const getHeaders = () => ({
 
 export const fetchServiceCodeByVendor = createAsyncThunk(
   'serviceCode/fetchByVendor',
-  async (_payload, { getState, rejectWithValue }) => {
+  async (payload, { getState, rejectWithValue }) => {
     try {
       const { serviceCode } = getState();
-      const { page, limit } = serviceCode.pagination;
-      const search = serviceCode.search;
+      const page = payload?.page || serviceCode.pagination.page;
+      const limit = payload?.limit || serviceCode.pagination.limit;
+      const search = payload?.search || serviceCode.search;
 
       const query = `?page=${page}&limit=${limit}${search ? `&search=${search}` : ''}`;
 
       const res = await axios.get(`${BaseUrl}/vendor/serviceCode${query}`, { headers: getHeaders() });
+      return res.data;
+    } catch (err) {
+      return rejectWithValue(err.message);
+    }
+  }
+);
 
+export const fetchAllServiceCodes = createAsyncThunk(
+  'serviceCode/fetchAll',
+  async (_, { rejectWithValue }) => {
+    try {
+      const res = await axios.get(`${BaseUrl}/vendor/serviceCode?limit=1000`, { headers: getHeaders() });
       return res.data;
     } catch (err) {
       return rejectWithValue(err.message);
@@ -89,6 +101,7 @@ const serviceCodeSlice = createSlice({
   name: 'serviceCode',
   initialState: {
     serviceCode: [],
+    allServiceCodes: [],
     selectedServiceCode: null,
     loading: false,
     error: null,
@@ -111,14 +124,17 @@ const serviceCodeSlice = createSlice({
       state.pagination.limit = action.payload;
     },
     setSearch: (state, action) => {
-    state.search = action.payload;
-  },
+      state.search = action.payload;
+    },
   },
   extraReducers: (builder) => {
     builder
       .addCase(fetchServiceCodeByVendor.fulfilled, (state, action) => {
-        state.serviceCode = action.payload.data;
-        state.pagination = action.payload.pagination;
+        state.serviceCode = action.payload.data || action.payload.serviceCodes || (Array.isArray(action.payload) ? action.payload : []);
+        state.pagination = action.payload.pagination || state.pagination;
+      })
+      .addCase(fetchAllServiceCodes.fulfilled, (state, action) => {
+        state.allServiceCodes = action.payload.data || action.payload.serviceCodes || (Array.isArray(action.payload) ? action.payload : []);
       })
       .addCase(fetchServiceCodeById.fulfilled, (state, action) => {
         state.selectedServiceCode = action.payload;
@@ -156,5 +172,5 @@ const serviceCodeSlice = createSlice({
   },
 });
 
-export const { setServiceCode, setPage, setLimit , setSearch} = serviceCodeSlice.actions;
+export const { setServiceCode, setPage, setLimit, setSearch } = serviceCodeSlice.actions;
 export default serviceCodeSlice.reducer;

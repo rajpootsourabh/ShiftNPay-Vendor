@@ -60,6 +60,7 @@ const SchedulePopup = ({
     (state) => state.schedule
   );
 
+
   const dispatch = useDispatch();
   const [dropdowns, setDropdowns] = useState({
     client: false,
@@ -260,6 +261,10 @@ const SchedulePopup = ({
       }
     },
   });
+
+  const selectedClientData = clients.find(c => c._id === formik.values.client);
+  const availableServiceOrders = selectedClientData?.serviceOrders || [];
+
 
   useEffect(() => {
     dispatch(fetchCareGiverByVendor());
@@ -463,23 +468,27 @@ const SchedulePopup = ({
                   <FormGroup>
                     <Label className="fw-bold">Service Order *</Label>
                     <Input
-                      type="text"
+                      type="select"
                       name="serviceOrder"
                       value={formik.values.serviceOrder}
-                      onChange={(e) => {
-                        formik.handleChange(e);
-
-                      }}
-
+                      onChange={formik.handleChange}
                       onBlur={formik.handleBlur}
-                      placeholder="Enter service order"
                       className={
                         formik.touched.serviceOrder &&
                           formik.errors.serviceOrder
                           ? "is-invalid"
                           : ""
                       }
-                    />
+                    >
+                      <option value="" disabled>
+                        Select Service Order
+                      </option>
+                      {availableServiceOrders.map((order, index) => (
+                        <option key={index} value={order.serviceType}>
+                          {order.serviceType}
+                        </option>
+                      ))}
+                    </Input>
                     {formik.touched.serviceOrder &&
                       formik.errors.serviceOrder && (
                         <div className="invalid-feedback d-block">

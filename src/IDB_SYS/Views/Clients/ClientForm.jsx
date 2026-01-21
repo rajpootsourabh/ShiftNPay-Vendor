@@ -22,6 +22,7 @@ import Visit from "./tabs/Visit";
 import Wellness from "./tabs/Wellness";
 import {
   createClient,
+  updateClient,
   fetchClientById,
 } from "../../../store/IDB_SYS/Clients/clientSlice";
 import { useDispatch, useSelector } from "react-redux";
@@ -287,7 +288,7 @@ const ClientForm = () => {
         'billingState', 'billingZip', 'payor2', 'payor3', 'payor4', 'physician2', 'physician3',
         'physician4', 'covidVaccinated', 'vaccineRefused', 'refusedReason', 'vaccineCard',
         'vaccineType', 'vaccineDate', 'fluVaccineDate', 'fluVaccineStatus', 'fluRefusedReason',
-        'alertNote',  'covidVaccinatedAlert', 'vaccineRefusedAlert', 'alertText', 'enableClientSpecific1500', 'cms1500Version',
+        'alertNote', 'covidVaccinatedAlert', 'vaccineRefusedAlert', 'alertText', 'enableClientSpecific1500', 'cms1500Version',
         'requireCaregiverSignature', 'requireClientSignature', 'clientPhoto'
       ],
       Attachments: ['attachments'],
@@ -366,11 +367,17 @@ const ClientForm = () => {
 
       const cleanData = sanitizeData(saveData);
 
-      const response = await dispatch(createClient(cleanData)).unwrap();
-
-      // If this was a new client creation, store the client ID
-      if (!currentClientId && response._id) {
-        setCurrentClientId(response._id);
+      let response;
+      if (currentClientId) {
+        // Update existing client
+        response = await dispatch(updateClient({ id: currentClientId, data: cleanData })).unwrap();
+      } else {
+        // Create new client
+        response = await dispatch(createClient(cleanData)).unwrap();
+        // Store the client ID for subsequent saves
+        if (response._id) {
+          setCurrentClientId(response._id);
+        }
       }
 
       // Mark tab as saved
