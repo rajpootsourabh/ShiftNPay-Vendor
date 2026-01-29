@@ -4,6 +4,7 @@ import { useDispatch, useSelector } from "react-redux";
 import {
   fetchSchedules,
   getAllWeeks,
+  deleteWeek,
 } from "../../../../store/IDB_SYS/timesheet/timesheetWeekSlice";
 import moment from "moment";
 import Modal from "react-bootstrap/Modal";
@@ -46,6 +47,25 @@ const TimesheetManager = () => {
 
   const handleCloseModal = () => {
     setShowModal(false);
+  };
+
+  const handleDeleteWeek = async (weekId, isLocked) => {
+    if (isLocked) {
+      alert("Cannot delete a locked/finalized week");
+      return;
+    }
+    
+    if (window.confirm("Are you sure you want to delete this draft week? This action cannot be undone.")) {
+      try {
+        await dispatch(deleteWeek(weekId)).unwrap();
+        // Clear selection if the deleted week was selected
+        if (selectedWeek === weekId) {
+          setSelectedWeek(null);
+        }
+      } catch (error) {
+        alert(error || "Failed to delete week");
+      }
+    }
   };
 
   const selectedWeekData = weeks.find((week) => week._id === selectedWeek);
@@ -108,13 +128,14 @@ const TimesheetManager = () => {
                       <th>Adv Billing</th>
                       <th>Allocated</th>
                       <th>Status</th>
+                      <th style={{ width: "80px" }}>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
                     {loading ? (
                       // Loading spinner for table data
                       <tr>
-                        <td colSpan="7" className="text-center py-4">
+                        <td colSpan="8" className="text-center py-4">
                           <div className="d-flex justify-content-center align-items-center">
                             <Spinner animation="border" variant="success" size="sm" className="me-2" />
                             <span>Loading pay periods...</span>
@@ -124,7 +145,7 @@ const TimesheetManager = () => {
                     ) : weeks.length === 0 ? (
                       // No records found message
                       <tr>
-                        <td colSpan="7" className="text-center py-4">
+                        <td colSpan="8" className="text-center py-4">
                           <div className="text-muted">
                             <i className="bi bi-inbox" style={{ fontSize: "2rem" }}></i>
                             <p className="mt-2 mb-0">No pay periods found</p>
@@ -159,7 +180,25 @@ const TimesheetManager = () => {
                           <td>{moment(row.endDate).format("MM/DD/yyyy")}</td>
                           <td></td>
                           <td></td>
-                          <td></td>
+                          <td>
+                            <span className={`badge ${row.isLocked ? 'bg-success' : 'bg-warning text-dark'}`}>
+                              {row.isLocked ? 'Locked' : 'Draft'}
+                            </span>
+                          </td>
+                          <td>
+                            <button
+                              type="button"
+                              className="btn btn-sm btn-outline-danger"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteWeek(row._id, row.isLocked);
+                              }}
+                              disabled={row.isLocked || loading}
+                              title={row.isLocked ? "Cannot delete locked week" : "Delete draft week"}
+                            >
+                              🗑️
+                            </button>
+                          </td>
                         </tr>
                       ))
                     )}

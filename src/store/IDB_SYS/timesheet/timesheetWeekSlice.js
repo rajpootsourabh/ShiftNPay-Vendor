@@ -112,6 +112,24 @@ export const fetchSchedules = createAsyncThunk(
     }
   }
 );
+
+export const deleteWeek = createAsyncThunk(
+  'timesheetWeek/deleteWeek',
+  async (id, { rejectWithValue }) => {
+    try {
+      await axios.delete(`${BaseUrl}/vendor/timesheet-weeks/${id}`, {
+        headers: getHeaders(),
+      });
+      return id; // Return the deleted week's ID
+    } catch (err) {
+      if (err.response && err.response.data && err.response.data.message) {
+        return rejectWithValue(err.response.data.message);
+      }
+      return rejectWithValue(err.message);
+    }
+  }
+);
+
 const timesheetWeekSlice = createSlice({
   name: 'timesheetWeek',
   initialState: {
@@ -190,6 +208,20 @@ const timesheetWeekSlice = createSlice({
         if (index !== -1) {
           state.weeks[index] = updatedWeek;
         }
+      })
+      // Delete week
+      .addCase(deleteWeek.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(deleteWeek.fulfilled, (state, action) => {
+        state.loading = false;
+        state.weeks = state.weeks.filter(week => week._id !== action.payload);
+        state.success = true;
+      })
+      .addCase(deleteWeek.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
       })
       // Update weeks
       .addCase(updateWeeks.fulfilled, (state, action) => {

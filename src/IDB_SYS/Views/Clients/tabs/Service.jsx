@@ -5,10 +5,12 @@ import { FaClipboardCheck, FaCalendarAlt, FaNotesMedical } from 'react-icons/fa'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCheck, faSave } from '@fortawesome/free-solid-svg-icons';
 import { fetchAllServiceCodes } from '../../../../store/IDB_SYS/Clients/serviceCodeSlice';
+import { fetchCareGiverByVendor } from '../../../../store/IDB_SYS/Clients/careGiverSlice';
 
 const Service = ({ formik, clientData, onSaveTab, isSaved, isSaving }) => {
   const dispatch = useDispatch();
   const { allServiceCodes: serviceCodeOptions, loading: serviceCodeLoading } = useSelector((state) => state.serviceCode);
+  const { careGiver: caregivers, loading: caregiverLoading } = useSelector((state) => state.careGiver);
 
   const [showModal, setShowModal] = useState(false);
   const [editIndex, setEditIndex] = useState(null);
@@ -52,7 +54,20 @@ const Service = ({ formik, clientData, onSaveTab, isSaved, isSaving }) => {
   // Initialize service orders from API when clientData is available
   useEffect(() => {
     dispatch(fetchAllServiceCodes());
+    dispatch(fetchCareGiverByVendor());
   }, [dispatch]);
+
+  // Helper function to get caregiver name by ID
+  const getCaregiverName = (caregiverId) => {
+    if (!caregiverId) return 'Not Assigned';
+    const caregiver = caregivers?.find(c => c._id === caregiverId);
+    if (caregiver) {
+      const firstName = caregiver.firstName || '';
+      const lastName = caregiver.lastName || '';
+      return `${firstName} ${lastName}`.trim() || 'Not Assigned';
+    }
+    return 'Not Assigned';
+  };
 
   useEffect(() => {
     if (clientData) {
@@ -356,6 +371,7 @@ const Service = ({ formik, clientData, onSaveTab, isSaved, isSaving }) => {
               <th>Start Date</th>
               <th>End Date</th>
               <th>Frequency</th>
+              <th>Caregiver</th>
               <th>Status</th>
               <th>Actions</th>
             </tr>
@@ -379,6 +395,11 @@ const Service = ({ formik, clientData, onSaveTab, isSaved, isSaving }) => {
                     )}
                   </td>
                   <td>{order.frequency || 'N/A'}</td>
+                  <td>
+                    <span className={order.caregiver ? 'text-dark' : 'text-muted'}>
+                      {getCaregiverName(order.caregiver)}
+                    </span>
+                  </td>
                   <td>
                     <Badge
                       bg={
@@ -795,6 +816,11 @@ const Service = ({ formik, clientData, onSaveTab, isSaved, isSaving }) => {
                     onChange={(e) => setNewServiceOrder({ ...newServiceOrder, caregiver: e.target.value })}
                   >
                     <option value="">Select Caregiver</option>
+                    {caregivers && caregivers.map((cg) => (
+                      <option key={cg._id} value={cg._id}>
+                        {`${cg.firstName || ''} ${cg.lastName || ''}`.trim() || cg.email}
+                      </option>
+                    ))}
                   </Form.Select>
                 </Form.Group>
               </Col>

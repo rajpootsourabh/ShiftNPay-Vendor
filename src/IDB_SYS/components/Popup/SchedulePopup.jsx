@@ -265,6 +265,110 @@ const SchedulePopup = ({
   const selectedClientData = clients.find(c => c._id === formik.values.client);
   const availableServiceOrders = selectedClientData?.serviceOrders || [];
 
+  // Helper function to convert service order daysOfWeek array to schedule days object
+  const convertDaysOfWeekToScheduleDays = (daysOfWeek) => {
+    const dayMapping = {
+      'Su': 'sunday',
+      'Mo': 'monday',
+      'Tu': 'tuesday',
+      'We': 'wednesday',
+      'Th': 'thursday',
+      'Fr': 'friday',
+      'Sa': 'saturday'
+    };
+    
+    const days = {
+      sunday: false,
+      monday: false,
+      tuesday: false,
+      wednesday: false,
+      thursday: false,
+      friday: false,
+      saturday: false,
+    };
+    
+    if (daysOfWeek && Array.isArray(daysOfWeek)) {
+      daysOfWeek.forEach(day => {
+        const mappedDay = dayMapping[day];
+        if (mappedDay) {
+          days[mappedDay] = true;
+        }
+      });
+    }
+    
+    return days;
+  };
+
+  // Auto-populate fields when a Service Order is selected
+  useEffect(() => {
+    if (!formik.values.serviceOrder || !selectedClientData) return;
+    
+    // Find the selected service order from the client's serviceOrders array
+    const selectedServiceOrder = availableServiceOrders.find(
+      order => order.serviceType === formik.values.serviceOrder
+    );
+    
+    if (!selectedServiceOrder) return;
+
+    // Auto-populate Payor if available (match by payor name or ID)
+    if (selectedServiceOrder.payor) {
+      const matchedPayor = payor.find(
+        p => p._id === selectedServiceOrder.payor || p.payor === selectedServiceOrder.payor
+      );
+      if (matchedPayor) {
+        formik.setFieldValue('payor', matchedPayor._id);
+      }
+    }
+
+    // Auto-populate Caregiver if assigned and load their jobs
+    if (selectedServiceOrder.caregiver) {
+      const matchedCaregiver = careGiver.find(
+        c => c._id === selectedServiceOrder.caregiver
+      );
+      if (matchedCaregiver) {
+        formik.setFieldValue('caregiver', matchedCaregiver._id);
+        // Load jobs for the caregiver
+        loadJobsWithShift(matchedCaregiver._id);
+      }
+    }
+
+    // Auto-populate Frequency type (weekly/monthly)
+    if (selectedServiceOrder.frequencyType) {
+      formik.setFieldValue('frequency', selectedServiceOrder.frequencyType);
+    }
+
+    // Auto-populate recurring weeks/interval
+    if (selectedServiceOrder.recurEvery) {
+      formik.setFieldValue('recurringWeeks', selectedServiceOrder.recurEvery);
+    }
+
+    // Auto-populate days of week for weekly frequency
+    if (selectedServiceOrder.daysOfWeek && selectedServiceOrder.daysOfWeek.length > 0) {
+      const scheduleDays = convertDaysOfWeekToScheduleDays(selectedServiceOrder.daysOfWeek);
+      formik.setFieldValue('days', scheduleDays);
+    }
+
+    // Auto-populate authorization start date if available
+    if (selectedServiceOrder.startDate) {
+      formik.setFieldValue('startDate', moment(selectedServiceOrder.startDate).format('YYYY-MM-DD'));
+    }
+
+    // Auto-populate authorization end date if available
+    if (selectedServiceOrder.endDate) {
+      formik.setFieldValue('endDate', moment(selectedServiceOrder.endDate).format('YYYY-MM-DD'));
+    }
+
+    // Auto-populate payroll item if available
+    if (selectedServiceOrder.payrollItem1) {
+      formik.setFieldValue('payrollItem', selectedServiceOrder.payrollItem1);
+    }
+
+    // Auto-populate rate from costPerHour if available
+    if (selectedServiceOrder.costPerHour) {
+      formik.setFieldValue('rate', selectedServiceOrder.costPerHour);
+    }
+
+  }, [formik.values.serviceOrder, formik.values.client]);
 
   useEffect(() => {
     dispatch(fetchCareGiverByVendor());
