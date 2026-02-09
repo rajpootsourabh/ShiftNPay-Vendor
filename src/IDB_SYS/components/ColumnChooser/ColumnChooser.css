@@ -1,0 +1,243 @@
+/* Column Chooser Modal Styles */
+
+.column-chooser-modal .modal-dialog {
+  max-width: 600px;
+}
+
+.column-chooser-modal .modal-header {
+  background-color: #198754;
+  color: white;
+}
+
+.column-chooser-modal .modal-header .btn-close {
+  filter: invert(1);
+}
+
+.column-chooser-modal .modal-title {
+  display: flex;
+  align-items: center;
+}
+
+.column-chooser-modal .modal-title .badge {
+  font-size: 0.75rem;
+  font-weight: normal;
+}
+
+/* Search Input */
+.column-chooser-search .input-group-text {
+  background-color: #f8f9fa;
+  border-right: none;
+}
+
+.column-chooser-search .form-control {
+  border-left: none;
+}
+
+.column-chooser-search .form-control:focus {
+  box-shadow: none;
+  border-color: #ced4da;
+}
+
+.column-chooser-search .form-control:focus + .btn-outline-secondary {
+  border-color: #ced4da;
+}
+
+/* Category Header */
+.column-category-header {
+  text-decoration: none;
+  color: #333;
+  background-color: #f8f9fa;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+}
+
+.column-category-header:hover {
+  background-color: #e9ecef;
+  color: #333;
+}
+
+.column-category-header:focus {
+  box-shadow: 0 0 0 0.2rem rgba(25, 135, 84, 0.25);
+  outline: none;
+}
+
+.category-arrow {
+  display: inline-block;
+  transition: transform 0.2s ease;
+  font-size: 0.75rem;
+}
+
+.category-arrow.expanded {
+  transform: rotate(90deg);
+}
+
+.category-arrow-icon {
+  font-size: 0.75rem;
+  transition: transform 0.2s ease;
+}
+
+/* Column Items */
+.column-category-items {
+  padding: 0.5rem 0;
+}
+
+.column-item {
+  transition: background-color 0.15s ease;
+  padding-left: 0.5rem;
+  border-radius: 4px;
+}
+
+.column-item:hover {
+  background-color: #f8f9fa;
+}
+
+.column-item.required-column {
+  background-color: #fff8e1;
+}
+
+.column-item .form-check-label {
+  cursor: pointer;
+  user-select: none;
+}
+
+.column-item .form-check-input:disabled + .form-check-label {
+  cursor: not-allowed;
+  color: #6c757d;
+}
+
+/* Order List */
+.column-order-item {
+  background-color: #fff;
+  transition: all 0.15s ease;
+  cursor: default;
+}
+
+.column-order-item:hover {
+  background-color: #f8f9fa;
+}
+
+.column-order-item:focus {
+  outline: none;
+  box-shadow: 0 0 0 0.2rem rgba(25, 135, 84, 0.25);
+}
+
+.column-order-item.border-warning {
+  background-color: #fff8e1;
+}
+
+.column-order-number {
+  min-width: 28px;
+  text-align: center;
+}
+
+.column-order-controls .btn {
+  padding: 0.25rem 0.5rem;
+  line-height: 1;
+}
+
+.column-order-controls .btn:disabled {
+  opacity: 0.4;
+}
+
+/* Tab Styling */
+.column-chooser-modal .nav-tabs .nav-link {
+  color: #212529;
+  font-size: 1rem;
+  font-weight: 600;
+  padding: 0.75rem 1.25rem;
+  letter-spacing: 0.02em;
+}
+
+.column-chooser-modal .nav-tabs .nav-link.active {
+  color: #155724;
+  font-weight: 700;
+}
+
+.column-chooser-modal .nav-tabs .nav-link:hover:not(.active) {
+  border-color: transparent;
+  color: #198754;
+}
+
+/* Scrollbar Styling */
+.column-chooser-list::-webkit-scrollbar,
+.column-order-list::-webkit-scrollbar {
+  width: 8px;
+}
+
+.column-chooser-list::-webkit-scrollbar-track,
+.column-order-list::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.column-chooser-list::-webkit-scrollbar-thumb,
+.column-order-list::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+}
+
+.column-chooser-list::-webkit-scrollbar-thumb:hover,
+.column-order-list::-webkit-scrollbar-thumb:hover {
+  background: #a1a1a1;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 576px) {
+  .column-chooser-modal .modal-dialog {
+    margin: 0.5rem;
+    max-width: calc(100% - 1rem);
+  }
+
+  .column-chooser-modal .modal-title {
+    flex-wrap: wrap;
+  }
+
+  .column-chooser-modal .modal-title .badge {
+    margin-top: 0.25rem;
+  }
+
+  .column-order-controls {
+    flex-direction: column;
+  }
+
+  .column-order-controls .btn {
+    margin-bottom: 0.25rem;
+  }
+}
+
+/* Animation for category expand/collapse */
+.column-category-items {
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Loading state placeholder */
+.column-chooser-loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 200px;
+}
+
+/* Empty state */
+.column-chooser-empty {
+  text-align: center;
+  padding: 2rem;
+  color: #6c757d;
+}
+
+.column-chooser-empty svg {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+  opacity: 0.5;
+}

@@ -160,6 +160,7 @@ const ClientForm = () => {
       // generationsEvvAlert: false,
       alertText: "",
       enableClientSpecific1500: false,
+      enableUB04: false,
       cms1500Version: "08/05",
       requireCaregiverSignature: false,
       requireClientSignature: false,
@@ -288,7 +289,7 @@ const ClientForm = () => {
         'billingState', 'billingZip', 'payor2', 'payor3', 'payor4', 'physician2', 'physician3',
         'physician4', 'covidVaccinated', 'vaccineRefused', 'refusedReason', 'vaccineCard',
         'vaccineType', 'vaccineDate', 'fluVaccineDate', 'fluVaccineStatus', 'fluRefusedReason',
-        'alertNote', 'covidVaccinatedAlert', 'vaccineRefusedAlert', 'alertText', 'enableClientSpecific1500', 'cms1500Version',
+        'alertNote', 'covidVaccinatedAlert', 'vaccineRefusedAlert', 'alertText', 'enableClientSpecific1500', 'enableUB04', 'cms1500Version',
         'requireCaregiverSignature', 'requireClientSignature', 'clientPhoto'
       ],
       Attachments: ['attachments'],

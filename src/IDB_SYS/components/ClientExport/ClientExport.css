@@ -1,0 +1,148 @@
+/* Client Export Dropdown Styles */
+
+.client-export-dropdown {
+  position: relative;
+  display: inline-block;
+}
+
+.client-export-dropdown .dropdown-arrow {
+  font-size: 0.7rem;
+  transition: transform 0.2s ease;
+}
+
+.client-export-dropdown .dropdown-arrow.open {
+  transform: rotate(180deg);
+}
+
+.client-export-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  z-index: 1000;
+  min-width: 260px;
+  background: #ffffff;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  margin-top: 4px;
+  padding: 8px 0;
+  animation: fadeIn 0.15s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Format Toggle */
+.export-format-toggle {
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  gap: 8px;
+}
+
+.format-label {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #495057;
+  margin-right: 4px;
+}
+
+.format-btn {
+  display: flex;
+  align-items: center;
+  padding: 4px 10px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  background: #f8f9fa;
+  color: #495057;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.format-btn:hover {
+  background: #e9ecef;
+  border-color: #adb5bd;
+}
+
+.format-btn.active {
+  background: #198754;
+  border-color: #198754;
+  color: #ffffff;
+}
+
+.format-btn.active:hover {
+  background: #157347;
+  border-color: #157347;
+}
+
+/* Divider */
+.export-divider {
+  height: 1px;
+  background: #dee2e6;
+  margin: 8px 0;
+}
+
+/* Export Options */
+.export-option {
+  display: block;
+  width: 100%;
+  padding: 10px 16px;
+  text-align: left;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.export-option:hover:not(:disabled) {
+  background: #f8f9fa;
+}
+
+.export-option:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.export-option-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.export-option-title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #212529;
+}
+
+.export-option-desc {
+  font-size: 0.75rem;
+  color: #6c757d;
+}
+
+/* Responsive */
+@media (max-width: 576px) {
+  .client-export-menu {
+    min-width: 220px;
+    right: -10px;
+  }
+
+  .export-format-toggle {
+    flex-wrap: wrap;
+  }
+
+  .format-label {
+    width: 100%;
+    margin-bottom: 4px;
+  }
+}

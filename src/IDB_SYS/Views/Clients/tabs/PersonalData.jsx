@@ -2059,33 +2059,32 @@ const PersonalData = ({ formik, clientData, saveClient, onSaveTab, isSaved, isSa
                 <div className="card-body">
                   <div className="d-flex">
                     <div className="form-check me-4">
-                      <input
+                      <Field
                         className="form-check-input"
                         type="checkbox"
-                        id="enableClient1500_1"
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            CreateClientAndOpenForm1500();
-                          }
-                        }}
+                        id="enableClientSpecific1500"
+                        name="enableClientSpecific1500"
+                        checked={values.enableClientSpecific1500}
                       />
                       <label
                         className="form-check-label"
-                        htmlFor="enableClient1500_1"
+                        htmlFor="enableClientSpecific1500"
                       >
                         Enable Client Specific 1500
                       </label>
                     </div>
 
                     <div className="form-check">
-                      <input
+                      <Field
                         className="form-check-input"
                         type="checkbox"
-                        id="enableClient1500_2"
+                        id="enableUB04"
+                        name="enableUB04"
+                        checked={values.enableUB04}
                       />
                       <label
                         className="form-check-label"
-                        htmlFor="enableClient1500_2"
+                        htmlFor="enableUB04"
                       >
                         Enable UB04
                       </label>
@@ -2096,12 +2095,30 @@ const PersonalData = ({ formik, clientData, saveClient, onSaveTab, isSaved, isSa
                     <button
                       type="button"
                       className="btn btn-sm btn-outline-primary me-2"
+                      onClick={() => {
+                        const clientId = values._id || clientData?._id;
+                        if (clientId) {
+                          navigate(`/generations.idb-sys/clients/form-1500B?client=${clientId}&version=08/05`);
+                        } else {
+                          // Save first then navigate
+                          CreateClientAndOpenForm1500();
+                        }
+                      }}
                     >
                       CMS 1500 Billing Version (08/05)
                     </button>
                     <button
                       type="button"
                       className="btn btn-sm btn-outline-primary me-2"
+                      onClick={() => {
+                        const clientId = values._id || clientData?._id;
+                        if (clientId) {
+                          navigate(`/generations.idb-sys/clients/form-1500B?client=${clientId}&version=02/12`);
+                        } else {
+                          // Save first then navigate
+                          CreateClientAndOpenForm1500();
+                        }
+                      }}
                     >
                       CMS 1500 Billing Version (02/12)
                     </button>
