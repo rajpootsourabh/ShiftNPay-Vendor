@@ -1,0 +1,49 @@
+.office-alert-banner-container {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  width: 100%;
+}
+
+.office-alert-banner {
+  border-bottom: 2px solid #ed6c02;
+  box-shadow: 0 2px 8px rgba(237, 108, 2, 0.2);
+}
+
+.office-alert-banner .MuiAlert-message {
+  flex-grow: 1;
+}
+
+.office-alert-content {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+}
+
+.office-alert-client-name {
+  color: #663c00;
+}
+
+.office-alert-message {
+  color: #1e1e1e;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* Animation for attention */
+@keyframes alertPulse {
+  0% {
+    box-shadow: 0 2px 8px rgba(237, 108, 2, 0.2);
+  }
+  50% {
+    box-shadow: 0 2px 16px rgba(237, 108, 2, 0.4);
+  }
+  100% {
+    box-shadow: 0 2px 8px rgba(237, 108, 2, 0.2);
+  }
+}
+
+.office-alert-banner:not(.MuiCollapse-hidden) {
+  animation: alertPulse 2s ease-in-out 3;
+}

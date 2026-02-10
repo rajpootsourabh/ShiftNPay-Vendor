@@ -44,6 +44,11 @@ const Reminders = ({ formik, clientData, onSaveTab, isSaved, isSaving }) => {
   const handleSaveReminder = () => {
     const dueDateTime = `${newReminder.dueDate}T${newReminder.dueTime}:00`;
 
+    // Get existing completedDate - use null instead of empty string for optional date fields
+    const existingCompletedDate = editIndex !== null 
+      ? formik.values.reminders[editIndex].completedDate 
+      : null;
+
     const reminderData = {
       ...newReminder,
       dueDate: dueDateTime,
@@ -51,7 +56,8 @@ const Reminders = ({ formik, clientData, onSaveTab, isSaved, isSaving }) => {
       createdDate: editIndex !== null ? formik.values.reminders[editIndex].createdDate : new Date().toISOString(),
       createdBy: editIndex !== null ? formik.values.reminders[editIndex].createdBy : 'Current User',
       completed: editIndex !== null ? formik.values.reminders[editIndex].completed : false,
-      completedDate: editIndex !== null ? formik.values.reminders[editIndex].completedDate : ''
+      // Use null for empty/undefined completedDate to avoid MongoDB validation errors
+      completedDate: existingCompletedDate || null
     };
 
     if (editIndex !== null) {

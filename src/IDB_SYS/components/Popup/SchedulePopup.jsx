@@ -35,6 +35,8 @@ import {
   clearSuccess,
   fetchJobs,
   updateSchedule,
+  checkSchedulingBlocked,
+  clearClientInterruptions,
 } from "../../../store/IDB_SYS/scheduler/scheduleSlice";
 import moment from "moment";
 import { convertToUTC } from "../../../Helper/functions";
@@ -56,9 +58,10 @@ const SchedulePopup = ({
   const { clients } = useSelector((state) => state.client);
   const [selectedJob, SetSelectedJob] = useState(null);
   const [selectedJobShift, SetSelectedJobShift] = useState(null);
-  const { loading, error, success, vendorJobs } = useSelector(
+  const { loading, error, success, vendorJobs, schedulingBlocked } = useSelector(
     (state) => state.schedule
   );
+  const [interruptionWarning, setInterruptionWarning] = useState(null);
 
 
   const dispatch = useDispatch();
@@ -227,6 +230,15 @@ const SchedulePopup = ({
 
     }
   }, [selectedJob])
+
+  // Clear interruption warning when modal closes
+  useEffect(() => {
+    if (!isOpen) {
+      setInterruptionWarning(null);
+      dispatch(clearClientInterruptions());
+    }
+  }, [isOpen, dispatch]);
+
   const formik = useFormik({
     initialValues: getInitialValues(),
     validationSchema,
@@ -261,6 +273,47 @@ const SchedulePopup = ({
       }
     },
   });
+
+  // Check for client interruptions when client or dates change
+  // NOTE: This useEffect must be AFTER useFormik() initialization
+  useEffect(() => {
+    const checkInterruptions = async () => {
+      const clientId = formik.values.client;
+      const startDate = formik.values.startDate;
+      const endDate = formik.values.endDate;
+
+      if (clientId && startDate && endDate) {
+        try {
+          const result = await dispatch(checkSchedulingBlocked({
+            clientId,
+            start: startDate,
+            end: endDate
+          })).unwrap();
+
+          if (result.blocked) {
+            const intStart = moment(result.interruption.startDate).format('MM/DD/YYYY');
+            const intEnd = moment(result.interruption.endDate).format('MM/DD/YYYY');
+            setInterruptionWarning({
+              message: `Scheduling is blocked for this client from ${intStart} to ${intEnd}`,
+              type: result.interruption.type,
+              reason: result.interruption.reason
+            });
+          } else {
+            setInterruptionWarning(null);
+          }
+        } catch (error) {
+          // If check fails, clear warning and let the server handle validation
+          setInterruptionWarning(null);
+        }
+      } else {
+        setInterruptionWarning(null);
+      }
+    };
+
+    // Debounce the check to avoid too many API calls
+    const timeoutId = setTimeout(checkInterruptions, 500);
+    return () => clearTimeout(timeoutId);
+  }, [formik.values.client, formik.values.startDate, formik.values.endDate, dispatch]);
 
   const selectedClientData = clients.find(c => c._id === formik.values.client);
   const availableServiceOrders = selectedClientData?.serviceOrders || [];
@@ -507,6 +560,23 @@ const SchedulePopup = ({
             <Alert color="danger" className="mb-3">
               {error.message ||
                 `Failed to ${isEdit ? "update" : "create"} schedule`}
+            </Alert>
+          )}
+
+          {/* Interruption Warning */}
+          {interruptionWarning && (
+            <Alert color="warning" className="mb-3">
+              <strong>⚠️ Service Interruption Active</strong>
+              <br />
+              {interruptionWarning.message}
+              {interruptionWarning.type && (
+                <span className="ms-2 badge bg-secondary">{interruptionWarning.type}</span>
+              )}
+              {interruptionWarning.reason && (
+                <div className="mt-1 text-muted small">
+                  <em>Reason: {interruptionWarning.reason}</em>
+                </div>
+              )}
             </Alert>
           )}
 
@@ -1194,7 +1264,12 @@ const SchedulePopup = ({
           <Button color="secondary" onClick={toggle} disabled={loading}>
             Cancel
           </Button>
-          <Button color="success" type="submit" disabled={loading}>
+          <Button 
+            color="success" 
+            type="submit" 
+            disabled={loading || interruptionWarning}
+            title={interruptionWarning ? "Cannot schedule during service interruption" : ""}
+          >
             {loading
               ? "Saving..."
               : isEdit

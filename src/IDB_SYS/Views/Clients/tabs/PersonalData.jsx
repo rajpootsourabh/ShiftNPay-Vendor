@@ -1614,14 +1614,18 @@ const PersonalData = ({ formik, clientData, saveClient, onSaveTab, isSaved, isSa
                       <div className="col-md-12 mb-3">
                         <div className="input-group">
                           <label className="input-group-text">Payor</label>
-                          <select className="form-select">
-                            <option value="null">-----Select-----</option>
+                          <Field
+                            as="select"
+                            name="billingPayor"
+                            className="form-select"
+                          >
+                            <option value="">-----Select-----</option>
                             {payor.map((p) => (
                               <option key={p._id} value={p._id}>
                                 {p.payor}
                               </option>
                             ))}
-                          </select>
+                          </Field>
                           <div className="input-group-text gap-2">
                             <FontAwesomeIcon icon={faPlusCircle} className="mx-2 cursor-pointer" onClick={() => {
                               navigateUser('clients/payors')
@@ -1638,35 +1642,55 @@ const PersonalData = ({ formik, clientData, saveClient, onSaveTab, isSaved, isSa
                       <div className="col-md-12 mb-3">
                         <div className="input-group">
                           <label className="input-group-text">Address 1</label>
-                          <input type="text" className="form-control" />
+                          <Field
+                            type="text"
+                            name="billingAddress1"
+                            className="form-control"
+                          />
                         </div>
                       </div>
 
                       <div className="col-md-12 mb-3">
                         <div className="input-group">
                           <label className="input-group-text">Address 2</label>
-                          <input type="text" className="form-control" />
+                          <Field
+                            type="text"
+                            name="billingAddress2"
+                            className="form-control"
+                          />
                         </div>
                       </div>
 
                       <div className="col-md-4 mb-3">
                         <div className="input-group">
                           <label className="input-group-text">City</label>
-                          <input type="text" className="form-control" />
+                          <Field
+                            type="text"
+                            name="billingCity"
+                            className="form-control"
+                          />
                         </div>
                       </div>
 
                       <div className="col-md-4 mb-3">
                         <div className="input-group">
                           <label className="input-group-text">State</label>
-                          <input type="text" className="form-control" />
+                          <Field
+                            type="text"
+                            name="billingState"
+                            className="form-control"
+                          />
                         </div>
                       </div>
 
                       <div className="col-md-4 mb-3">
                         <div className="input-group">
                           <label className="input-group-text">Zip</label>
-                          <input type="text" className="form-control" />
+                          <Field
+                            type="text"
+                            name="billingZip"
+                            className="form-control"
+                          />
                         </div>
                       </div>
                     </div>
@@ -1681,17 +1705,18 @@ const PersonalData = ({ formik, clientData, saveClient, onSaveTab, isSaved, isSa
                             <label className="input-group-text">
                               Payor {num}
                             </label>
-                            <select
+                            <Field
+                              as="select"
                               className="form-select"
                               name={`payor${num}`}
                             >
-                              <option value="0">-----Select-----</option>
+                              <option value="">-----Select-----</option>
                               {payor.map((p) => (
                                 <option key={p._id} value={p._id}>
                                   {p.payor}
                                 </option>
                               ))}
-                            </select>
+                            </Field>
                             <div className="input-group-text gap-2">
                               <FontAwesomeIcon icon={faPlusCircle} className="mx-2 cursor-pointer" onClick={() => {
                                 navigateUser('clients/payors')
@@ -1720,17 +1745,18 @@ const PersonalData = ({ formik, clientData, saveClient, onSaveTab, isSaved, isSa
                             <label className="input-group-text">
                               Physician {num}
                             </label>
-                            <select
+                            <Field
+                              as="select"
                               className="form-select"
                               name={`physician${num}`}
                             >
-                              <option value="null">-----Select-----</option>
+                              <option value="">-----Select-----</option>
                               {physician.map((phys) => (
                                 <option key={phys._id} value={phys._id}>
                                   {phys.firstName} {phys.lastName}
                                 </option>
                               ))}
-                            </select>
+                            </Field>
                             <div className="input-group-text gap-2">
                               <FontAwesomeIcon icon={faPlusCircle} className="mx-2 cursor-pointer" onClick={() => {
                                 navigateUser('clients/physician')

@@ -1,213 +1,307 @@
 // InsuranceFormReplica.jsx
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { useFormik } from "formik";
 import { fetchClientById, updateClient } from "../../../../store/IDB_SYS/Clients/clientSlice";
+import { fetchPayorByVendor } from "../../../../store/IDB_SYS/Clients/payorSlice";
 import { useDispatch, useSelector } from "react-redux";
-import { useLocation, useParams } from "react-router-dom";
+import { useLocation, useParams, useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faSave, faTimes, faSyncAlt, faPrint } from "@fortawesome/free-solid-svg-icons";
 
 export default function InsuranceFormReplica() {
   const { selectedClient } = useSelector((state) => state.client);
+  const { payor: payors } = useSelector((state) => state.payor);
   const { client } = useParams();
   const dispatch = useDispatch();
   const location = useLocation();
+  const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [initialFormValues, setInitialFormValues] = useState(null);
+
   const getClientIdFromQueryString = () => {
     const searchParams = new URLSearchParams(location.search);
     return searchParams.get('client');
   };
 
-  const clientId = getClientIdFromQueryString();
+  const clientId = getClientIdFromQueryString() || client;
 
+  // Fetch client and payor data on mount
   useEffect(() => {
+    dispatch(fetchPayorByVendor({ limit: 100 }));
     if (clientId) {
       dispatch(fetchClientById(clientId));
     }
   }, [clientId, dispatch]);
 
+  // Helper function to safely format date
+  const formatDate = (dateValue) => {
+    if (!dateValue) return "";
+    try {
+      const date = new Date(dateValue);
+      if (isNaN(date.getTime())) return "";
+      return date.toISOString().split('T')[0];
+    } catch {
+      return "";
+    }
+  };
+
+  // Build form values from client data (auto-population logic)
+  const buildFormValuesFromClient = useCallback((clientData) => {
+    if (!clientData) return getDefaultFormValues();
+
+    const cmsData = clientData.cms1500 || {};
+    const icd10Codes = cmsData.icd10Codes || {};
+
+    // Find payor name from payors list
+    const selectedPayor = payors?.find(p => p._id === clientData.billingPayor);
+    const payorName = selectedPayor?.payor || "";
+
+    return {
+      // Payor and Carrier - Auto-fill from billing payor
+      payor: clientData.billingPayor || "",
+      carrier: payorName || cmsData.carrier || "",
+
+      // Insurance Type - from CMS data or derive from client type
+      insType: cmsData.insuranceType || "medicaid",
+      insuredId: cmsData.insuredId || clientData.medRecordNumber || "",
+
+      // Patient Information - Auto-fill from client personal data
+      patientName: cmsData.patientName || `${clientData.lastName || ""}, ${clientData.firstName || ""} ${clientData.middleInitial || ""}`.trim().replace(/,\s*$/, ''),
+      patientAddress: cmsData.patientAddress || clientData.billingAddress1 || clientData.homeAddress1 || "",
+      patientCity: cmsData.patientCity || clientData.billingCity || clientData.homeCity || "",
+      patientState: cmsData.patientState || clientData.billingState || clientData.homeState || "",
+      patientZip: cmsData.patientZip || clientData.billingZip || clientData.homeZip || "",
+      patientPhone: cmsData.patientPhone || clientData.phone1 || "",
+      patientDob: formatDate(clientData.dob),
+      patientSex: cmsData.patientSex || (clientData.gender === 'male' ? 'male' : clientData.gender === 'female' ? 'female' : ''),
+
+      // Insured Information - Auto-fill from client data
+      insuredLastName: cmsData.insuredLastName || clientData.lastName || "",
+      insuredFirstName: cmsData.insuredFirstName || clientData.firstName || "",
+      insuredMiddleInitial: cmsData.insuredMiddleInitial || clientData.middleInitial || "",
+      insuredAddress: cmsData.insuredAddress || clientData.billingAddress1 || clientData.homeAddress1 || "",
+      insuredCity: cmsData.insuredCity || clientData.billingCity || clientData.homeCity || "",
+      insuredState: cmsData.insuredState || clientData.billingState || clientData.homeState || "",
+      insuredZip: cmsData.insuredZip || clientData.billingZip || clientData.homeZip || "",
+      insuredPhone: cmsData.insuredPhone || clientData.phone1 || "",
+      insuredPolicyNumber: cmsData.insuredPolicyNumber || clientData.referralNumber || "",
+      insuredDob: formatDate(cmsData.insuredDob || clientData.dob),
+      insuredSex: cmsData.insuredSex || (clientData.gender === 'male' ? 'male' : clientData.gender === 'female' ? 'female' : ''),
+      insuredPlanName: cmsData.insuredPlanName || "",
+      anotherPlan: cmsData.anotherPlan || "no",
+
+      // Relationship
+      relationship: cmsData.relationshipToInsured || "self",
+
+      // Condition Related To
+      employment: cmsData.employmentRelated || "N",
+      autoAccident: cmsData.autoAccident || "N",
+      otherAccident: cmsData.otherAccident || "N",
+      claimCodes: cmsData.claimCodes || clientData.diagnosisCode || "",
+      accidentState: cmsData.accidentState || "",
+
+      // Other Insured
+      otherInsuredName: cmsData.otherInsuredName || "",
+      otherInsuredPolicy: cmsData.otherInsuredPolicy || "",
+      otherClaimId: cmsData.otherClaimId || "",
+
+      // Signatures and Dates
+      patientSignature: cmsData.patientSignatureOnFile !== undefined ? cmsData.patientSignatureOnFile : true,
+      insuredSignature: cmsData.insuredSignatureOnFile !== undefined ? cmsData.insuredSignatureOnFile : true,
+      illnessDate: formatDate(cmsData.currentIllnessDate || clientData.assessmentDate),
+      illnessQual: cmsData.currentIllnessQualifier || "",
+      otherDate: formatDate(cmsData.otherDate),
+      otherQual: cmsData.otherDateQualifier || "",
+      unableWorkFrom: formatDate(cmsData.unableToWorkFrom || clientData.serviceStart),
+      unableWorkThru: formatDate(cmsData.unableToWorkThrough || clientData.serviceEnd),
+
+      // Referring Provider
+      referringProvider: cmsData.referringProvider || "",
+      referringProviderId: cmsData.referringProviderId || "",
+      referringProviderNpi: cmsData.referringProviderNpi || "",
+
+      // Hospitalization
+      hospitalizationFrom: formatDate(cmsData.hospitalizationFrom),
+      hospitalizationThrough: formatDate(cmsData.hospitalizationThrough),
+
+      // Additional Info
+      additionalClaimInfo: cmsData.additionalClaimInfo || "",
+      outsideLab: cmsData.outsideLab || "N",
+      outsideLabCharges: cmsData.outsideLabCharges || 0,
+
+      // Billing Information
+      resubmissionCode: cmsData.resubmissionCode || "",
+      originalReferenceNumber: cmsData.originalReferenceNumber || "",
+      priorAuthorizationNumber: cmsData.priorAuthorizationNumber || clientData.referralNumber || "",
+      placeOfService: cmsData.placeOfService || "12", // 12 = Home
+      emg: cmsData.emg || false,
+      epsdt: cmsData.epsdt || false,
+      qualifier: cmsData.qualifier || "",
+      providerNumberType: cmsData.providerNumberType || "other",
+      providerNumber: cmsData.providerNumber || "",
+      providerNpi: cmsData.providerNpi || "",
+      federalTaxId: cmsData.federalTaxId || "",
+      taxIdType: cmsData.taxIdType || "EIN",
+      patientAccountNumber: cmsData.patientAccountNumber || `${(clientData.firstName || "").charAt(0)}${(clientData.lastName || "").charAt(0)}`.toUpperCase(),
+      acceptAssignment: cmsData.acceptAssignment !== undefined ? cmsData.acceptAssignment : true,
+      amountPaid: cmsData.amountPaid || 0,
+
+      // Provider Information
+      physicianSignature: cmsData.physicianSignature || "",
+      serviceFacilityName: cmsData.serviceFacilityName || "",
+      serviceFacilityAddress: cmsData.serviceFacilityAddress || "",
+      serviceFacilityNpi: cmsData.serviceFacilityNpi || "",
+
+      // Billing Provider
+      billingProviderName: cmsData.billingProviderName || "",
+      billingProviderAddress: cmsData.billingProviderAddress || "",
+      billingProviderNpi: cmsData.billingProviderNpi || "",
+
+      // ICD-10 Codes - Auto-fill diagnosis code in first slot
+      icd10_A: icd10Codes.A || clientData.diagnosisCode || "",
+      icd10_B: icd10Codes.B || "",
+      icd10_C: icd10Codes.C || "",
+      icd10_D: icd10Codes.D || "",
+      icd10_E: icd10Codes.E || "",
+      icd10_F: icd10Codes.F || "",
+      icd10_G: icd10Codes.G || "",
+      icd10_H: icd10Codes.H || "",
+      icd10_I: icd10Codes.I || "",
+      icd10_J: icd10Codes.J || "",
+      icd10_K: icd10Codes.K || "",
+      icd10_L: icd10Codes.L || "",
+      icdIndicator: cmsData.icdIndicator || "10",
+
+      // Checkbox helpers
+      ol: cmsData.outsideLab || "N",
+      ssn: cmsData.taxIdType === "SSN",
+      ein: cmsData.taxIdType === "EIN" || cmsData.taxIdType !== "SSN",
+      acceptYes: cmsData.acceptAssignment !== undefined ? cmsData.acceptAssignment : true,
+    };
+  }, [payors]);
+
+  // Get default empty form values
+  const getDefaultFormValues = () => ({
+    payor: "",
+    carrier: "",
+    insType: "medicaid",
+    insuredId: "",
+    patientName: "",
+    patientAddress: "",
+    patientCity: "",
+    patientState: "",
+    patientZip: "",
+    patientPhone: "",
+    patientDob: "",
+    patientSex: "",
+    insuredLastName: "",
+    insuredFirstName: "",
+    insuredMiddleInitial: "",
+    insuredAddress: "",
+    insuredCity: "",
+    insuredState: "",
+    insuredZip: "",
+    insuredPhone: "",
+    insuredPolicyNumber: "",
+    insuredDob: "",
+    insuredSex: "",
+    insuredPlanName: "",
+    anotherPlan: "no",
+    relationship: "self",
+    employment: "N",
+    autoAccident: "N",
+    otherAccident: "N",
+    claimCodes: "",
+    accidentState: "",
+    otherInsuredName: "",
+    otherInsuredPolicy: "",
+    otherClaimId: "",
+    patientSignature: true,
+    insuredSignature: true,
+    illnessDate: "",
+    illnessQual: "",
+    otherDate: "",
+    otherQual: "",
+    unableWorkFrom: "",
+    unableWorkThru: "",
+    referringProvider: "",
+    referringProviderId: "",
+    referringProviderNpi: "",
+    hospitalizationFrom: "",
+    hospitalizationThrough: "",
+    additionalClaimInfo: "",
+    outsideLab: "N",
+    outsideLabCharges: 0,
+    resubmissionCode: "",
+    originalReferenceNumber: "",
+    priorAuthorizationNumber: "",
+    placeOfService: "12",
+    emg: false,
+    epsdt: false,
+    qualifier: "",
+    providerNumberType: "other",
+    providerNumber: "",
+    providerNpi: "",
+    federalTaxId: "",
+    taxIdType: "EIN",
+    patientAccountNumber: "",
+    acceptAssignment: true,
+    amountPaid: 0,
+    physicianSignature: "",
+    serviceFacilityName: "",
+    serviceFacilityAddress: "",
+    serviceFacilityNpi: "",
+    billingProviderName: "",
+    billingProviderAddress: "",
+    billingProviderNpi: "",
+    icd10_A: "",
+    icd10_B: "",
+    icd10_C: "",
+    icd10_D: "",
+    icd10_E: "",
+    icd10_F: "",
+    icd10_G: "",
+    icd10_H: "",
+    icd10_I: "",
+    icd10_J: "",
+    icd10_K: "",
+    icd10_L: "",
+    icdIndicator: "10",
+    ol: "N",
+    ssn: false,
+    ein: true,
+    acceptYes: true,
+  });
+
   // Pre-fill form when selectedClient data is available
   useEffect(() => {
-    if (selectedClient && selectedClient.cms1500) {
-      const cmsData = selectedClient.cms1500;
-      const icd10Codes = cmsData.icd10Codes || {};
-
-      formik.setValues({
-        // Payor and Carrier
-        payor: selectedClient.billingPayor || "",
-        carrier: selectedClient.billingPayor || "",
-
-        // Insurance Type
-        insType: cmsData.insuranceType || "medicaid",
-        insuredId: cmsData.insuredId || selectedClient.medRecordNumber || "",
-
-        // Patient Information
-        patientName: cmsData.patientName || `${selectedClient.lastName || ""}, ${selectedClient.firstName || ""} ${selectedClient.middleInitial || ""}`.trim(),
-        patientAddress: cmsData.patientAddress || selectedClient.homeAddress1 || "",
-        patientCity: cmsData.patientCity || selectedClient.homeCity || "",
-        patientState: cmsData.patientState || selectedClient.homeState || "",
-        patientZip: cmsData.patientZip || selectedClient.homeZip || "",
-        patientPhone: cmsData.patientPhone || selectedClient.phone1 || "",
-        patientDob: selectedClient.dob ? new Date(selectedClient.dob).toISOString().split('T')[0] : "",
-        patientSex: cmsData.patientSex || (selectedClient.gender === 'male' ? 'male' : 'female'),
-
-        // Insured Information
-        insuredLastName: cmsData.insuredLastName || selectedClient.lastName || "",
-        insuredFirstName: cmsData.insuredFirstName || selectedClient.firstName || "",
-        insuredMiddleInitial: cmsData.insuredMiddleInitial || selectedClient.middleInitial || "",
-        insuredAddress: cmsData.insuredAddress || selectedClient.homeAddress1 || "",
-        insuredCity: cmsData.insuredCity || selectedClient.homeCity || "",
-        insuredState: cmsData.insuredState || selectedClient.homeState || "",
-        insuredZip: cmsData.insuredZip || selectedClient.homeZip || "",
-        insuredPhone: cmsData.insuredPhone || selectedClient.phone1 || "",
-        insuredPolicyNumber: cmsData.insuredPolicyNumber || selectedClient.referralNumber || "",
-        insuredDob: cmsData.insuredDob ? new Date(cmsData.insuredDob).toISOString().split('T')[0] : (selectedClient.dob ? new Date(selectedClient.dob).toISOString().split('T')[0] : ""),
-        insuredSex: cmsData.insuredSex || (selectedClient.gender === 'male' ? 'male' : 'female'),
-        insuredPlanName: cmsData.insuredPlanName || selectedClient.clientType?.name || "",
-        anotherPlan: "no",
-
-        // Relationship
-        relationship: cmsData.relationshipToInsured || "self",
-
-        // Condition Related To
-        employment: cmsData.employmentRelated || "N",
-        autoAccident: cmsData.autoAccident || "N",
-        otherAccident: cmsData.otherAccident || "N",
-        claimCodes: selectedClient.diagnosisCode || "",
-        accidentState: cmsData.accidentState || "",
-
-        // Other Insured
-        otherInsuredName: cmsData.otherInsuredName || "",
-        otherInsuredPolicy: cmsData.otherInsuredPolicy || "",
-        otherClaimId: cmsData.otherClaimId || "",
-
-        // Signatures and Dates
-        patientSignature: cmsData.patientSignatureOnFile !== undefined ? cmsData.patientSignatureOnFile : true,
-        insuredSignature: cmsData.insuredSignatureOnFile !== undefined ? cmsData.insuredSignatureOnFile : true,
-        illnessDate: cmsData.currentIllnessDate ? new Date(cmsData.currentIllnessDate).toISOString().split('T')[0] : (selectedClient.assessmentDate ? new Date(selectedClient.assessmentDate).toISOString().split('T')[0] : ""),
-        illnessQual: cmsData.currentIllnessQualifier || "",
-        otherDate: cmsData.otherDate ? new Date(cmsData.otherDate).toISOString().split('T')[0] : "",
-        otherQual: cmsData.otherDateQualifier || "",
-        unableWorkFrom: cmsData.unableToWorkFrom ? new Date(cmsData.unableToWorkFrom).toISOString().split('T')[0] : (selectedClient.serviceStart ? new Date(selectedClient.serviceStart).toISOString().split('T')[0] : ""),
-        unableWorkThru: cmsData.unableToWorkThrough ? new Date(cmsData.unableToWorkThrough).toISOString().split('T')[0] : (selectedClient.serviceEnd ? new Date(selectedClient.serviceEnd).toISOString().split('T')[0] : ""),
-
-        // Referring Provider
-        referringProvider: cmsData.referringProvider || selectedClient.physician?.name || "",
-        referringProviderId: cmsData.referringProviderId || selectedClient.physician?.id || "",
-        referringProviderNpi: cmsData.referringProviderNpi || "",
-
-        // Hospitalization
-        hospitalizationFrom: cmsData.hospitalizationFrom ? new Date(cmsData.hospitalizationFrom).toISOString().split('T')[0] : "",
-        hospitalizationThrough: cmsData.hospitalizationThrough ? new Date(cmsData.hospitalizationThrough).toISOString().split('T')[0] : "",
-
-        // Additional Info
-        additionalClaimInfo: cmsData.additionalClaimInfo || "",
-        outsideLab: cmsData.outsideLab || "N",
-        outsideLabCharges: cmsData.outsideLabCharges || 0,
-
-        // Billing Information
-        resubmissionCode: cmsData.resubmissionCode || "",
-        originalReferenceNumber: cmsData.originalReferenceNumber || "",
-        priorAuthorizationNumber: cmsData.priorAuthorizationNumber || "",
-        placeOfService: cmsData.placeOfService || "",
-        emg: cmsData.emg || false,
-        epsdt: cmsData.epsdt || false,
-        qualifier: cmsData.qualifier || "",
-        providerNumberType: cmsData.providerNumberType || "other",
-        providerNumber: cmsData.providerNumber || "",
-        providerNpi: cmsData.providerNpi || "1639837933",
-        federalTaxId: cmsData.federalTaxId || "88-1752897",
-        taxIdType: cmsData.taxIdType || "EIN",
-        patientAccountNumber: cmsData.patientAccountNumber || "FFA",
-        acceptAssignment: cmsData.acceptAssignment !== undefined ? cmsData.acceptAssignment : true,
-        amountPaid: cmsData.amountPaid || 0,
-
-        // Provider Information
-        physicianSignature: cmsData.physicianSignature || "",
-        serviceFacilityName: cmsData.serviceFacilityName || "",
-        serviceFacilityAddress: cmsData.serviceFacilityAddress || "",
-        icd10_A: icd10Codes.A || "",
-        icd10_B: icd10Codes.B || "",
-        icd10_C: icd10Codes.C || "",
-        icd10_D: icd10Codes.D || "",
-        icd10_E: icd10Codes.E || "",
-        icd10_F: icd10Codes.F || "",
-        icd10_G: icd10Codes.G || "",
-        icd10_H: icd10Codes.H || "",
-        icd10_I: icd10Codes.I || "",
-        icd10_J: icd10Codes.J || "",
-        icd10_K: icd10Codes.K || "",
-        icd10_L: icd10Codes.L || "",
-        icdIndicator: cmsData.icdIndicator || "10",
-      });
+    if (selectedClient && selectedClient._id === clientId) {
+      const formValues = buildFormValuesFromClient(selectedClient);
+      formik.setValues(formValues);
+      setInitialFormValues(formValues);
+      setHasUnsavedChanges(false);
     }
-  }, [selectedClient]);
+  }, [selectedClient, clientId, payors]);
 
   const formik = useFormik({
-    enableReinitialize: true,
-    initialValues: {
-      // ... initial values (same as before)
-      // Add all the new fields from the schema
-      employment: "N",
-      autoAccident: "N",
-      otherAccident: "N",
-      accidentState: "",
-      referringProviderNpi: "",
-      hospitalizationFrom: "",
-      hospitalizationThrough: "",
-      additionalClaimInfo: "",
-      outsideLab: "N",
-      outsideLabCharges: 0,
-      resubmissionCode: "",
-      originalReferenceNumber: "",
-      priorAuthorizationNumber: "",
-      placeOfService: "",
-      emg: false,
-      epsdt: false,
-      qualifier: "",
-      providerNumberType: "other",
-      providerNumber: "",
-      providerNpi: "1639837933",
-      federalTaxId: "88-1752897",
-      taxIdType: "EIN",
-      patientAccountNumber: "FFA",
-      acceptAssignment: true,
-      amountPaid: 0,
-      physicianSignature: "",
-      serviceFacilityName: "",
-      serviceFacilityAddress: "",
-      icd10_A: "",
-      icd10_B: "",
-      icd10_C: "",
-      icd10_D: "",
-      icd10_E: "",
-      icd10_F: "",
-      icd10_G: "",
-      icd10_H: "",
-      icd10_I: "",
-      icd10_J: "",
-      icd10_K: "",
-      icd10_L: "",
-      icdIndicator: "10",
-
-      // Add other missing fields from your form
-      ol: "N", // Outside Lab from Section 20
-      provnum: "other", // Provider number type
-      ssn: false, // Tax ID type
-      ein: true, // Tax ID type
-      acceptYes: true, // Accept assignment
-    },
+    enableReinitialize: false,
+    initialValues: getDefaultFormValues(),
     onSubmit: async (values) => {
       setIsLoading(true);
       try {
         const cms1500Data = {
           insuranceType: values.insType,
           insuredId: values.insuredId,
+          carrier: values.carrier,
           patientName: values.patientName,
           patientAddress: values.patientAddress,
           patientCity: values.patientCity,
           patientState: values.patientState,
           patientZip: values.patientZip,
           patientPhone: values.patientPhone,
-          patientSex: values.patientSex,
+          patientSex: values.patientSex || undefined,
           insuredLastName: values.insuredLastName,
           insuredFirstName: values.insuredFirstName,
           insuredMiddleInitial: values.insuredMiddleInitial,
@@ -217,32 +311,34 @@ export default function InsuranceFormReplica() {
           insuredZip: values.insuredZip,
           insuredPhone: values.insuredPhone,
           insuredPolicyNumber: values.insuredPolicyNumber,
-          insuredDob: values.insuredDob,
-          insuredSex: values.insuredSex,
+          insuredDob: values.insuredDob || null,
+          insuredSex: values.insuredSex || undefined,
           insuredPlanName: values.insuredPlanName,
+          anotherPlan: values.anotherPlan,
           relationshipToInsured: values.relationship,
           employmentRelated: values.employment,
           autoAccident: values.autoAccident,
           otherAccident: values.otherAccident,
+          claimCodes: values.claimCodes,
           accidentState: values.accidentState,
           otherInsuredName: values.otherInsuredName,
           otherInsuredPolicy: values.otherInsuredPolicy,
           otherClaimId: values.otherClaimId,
           patientSignatureOnFile: values.patientSignature,
           insuredSignatureOnFile: values.insuredSignature,
-          currentIllnessDate: values.illnessDate,
+          currentIllnessDate: values.illnessDate || null,
           currentIllnessQualifier: values.illnessQual,
-          otherDate: values.otherDate,
+          otherDate: values.otherDate || null,
           otherDateQualifier: values.otherQual,
-          unableToWorkFrom: values.unableWorkFrom,
-          unableToWorkThrough: values.unableWorkThru,
+          unableToWorkFrom: values.unableWorkFrom || null,
+          unableToWorkThrough: values.unableWorkThru || null,
           referringProvider: values.referringProvider,
           referringProviderId: values.referringProviderId,
           referringProviderNpi: values.referringProviderNpi,
-          hospitalizationFrom: values.hospitalizationFrom,
-          hospitalizationThrough: values.hospitalizationThrough,
+          hospitalizationFrom: values.hospitalizationFrom || null,
+          hospitalizationThrough: values.hospitalizationThrough || null,
           additionalClaimInfo: values.additionalClaimInfo,
-          outsideLab: values.outsideLab,
+          outsideLab: values.ol,
           outsideLabCharges: values.outsideLabCharges,
           resubmissionCode: values.resubmissionCode,
           originalReferenceNumber: values.originalReferenceNumber,
@@ -255,13 +351,17 @@ export default function InsuranceFormReplica() {
           providerNumber: values.providerNumber,
           providerNpi: values.providerNpi,
           federalTaxId: values.federalTaxId,
-          taxIdType: values.taxIdType,
+          taxIdType: values.ein ? "EIN" : "SSN",
           patientAccountNumber: values.patientAccountNumber,
-          acceptAssignment: values.acceptAssignment,
+          acceptAssignment: values.acceptYes,
           amountPaid: values.amountPaid,
           physicianSignature: values.physicianSignature,
           serviceFacilityName: values.serviceFacilityName,
           serviceFacilityAddress: values.serviceFacilityAddress,
+          serviceFacilityNpi: values.serviceFacilityNpi,
+          billingProviderName: values.billingProviderName,
+          billingProviderAddress: values.billingProviderAddress,
+          billingProviderNpi: values.billingProviderNpi,
           lastModified: new Date().toISOString(),
           icd10Codes: {
             A: values.icd10_A,
@@ -278,37 +378,56 @@ export default function InsuranceFormReplica() {
             L: values.icd10_L
           },
           icdIndicator: values.icdIndicator,
-
-          // Other missing fields
-          outsideLab: values.ol,
-          taxIdType: values.ein ? "EIN" : "SSN",
-          acceptAssignment: values.acceptYes,
         };
 
+        // Only update CMS-1500 data, not core client data
         const updateData = {
-          billingPayor: values.payor,
-          medRecordNumber: values.insuredId,
-          diagnosisCode: values.claimCodes,
           cms1500: cms1500Data
         };
 
         if (clientId) {
           await dispatch(updateClient({ id: clientId, data: updateData })).unwrap();
-          alert("CMS-1500 form data saved successfully!");
-        }
-
-        if (client) {
-          await dispatch(updateClient({ id: client, data: updateData })).unwrap();
-          alert("CMS-1500 form data saved successfully!");
+          toast.success("CMS-1500 form saved successfully!");
+          setHasUnsavedChanges(false);
+          setInitialFormValues(formik.values);
         }
       } catch (error) {
         console.error("Error saving CMS-1500 data:", error);
-        alert("Error saving form data. Please try again.");
+        toast.error("Error saving form data. Please try again.");
       } finally {
         setIsLoading(false);
       }
     },
   });
+
+  // Track changes
+  useEffect(() => {
+    if (initialFormValues) {
+      const hasChanges = JSON.stringify(formik.values) !== JSON.stringify(initialFormValues);
+      setHasUnsavedChanges(hasChanges);
+    }
+  }, [formik.values, initialFormValues]);
+
+  // Handle cancel - discard changes and navigate back
+  const handleCancel = () => {
+    if (hasUnsavedChanges) {
+      if (window.confirm("You have unsaved changes. Are you sure you want to discard them?")) {
+        navigate(-1);
+      }
+    } else {
+      navigate(-1);
+    }
+  };
+
+  // Handle print
+  const handlePrint = () => {
+    window.print();
+  };
+
+  // Refresh payor list
+  const handleRefreshPayors = () => {
+    dispatch(fetchPayorByVendor({ limit: 100 }));
+  };
 
   const LetterRow = ({ letters }) => (
     <div className="row gx-2 mb-2 align-items-end">
@@ -332,9 +451,52 @@ export default function InsuranceFormReplica() {
   const icdLettersRow2 = ["E", "F", "G", "H"];
   const icdLettersRow3 = ["I", "J", "K", "L"];
 
+  // Get client name for header
+  const clientName = selectedClient 
+    ? `${selectedClient.firstName || ''} ${selectedClient.lastName || ''}`.trim()
+    : '';
 
   return (
     <div className="container mt-4 print-optimized">
+      {/* Action Bar - Save/Cancel/Print */}
+      <div className="cms-action-bar d-flex justify-content-between align-items-center mb-3 p-2 bg-light rounded no-print">
+        <div className="d-flex align-items-center gap-2">
+          <h5 className="mb-0">CMS-1500 Form</h5>
+          {clientName && <span className="badge bg-primary">{clientName}</span>}
+          {hasUnsavedChanges && <span className="badge bg-warning text-dark">Unsaved Changes</span>}
+        </div>
+        <div className="d-flex gap-2">
+          <button
+            type="button"
+            className="btn btn-outline-secondary btn-sm"
+            onClick={handlePrint}
+            title="Print Form"
+          >
+            <FontAwesomeIcon icon={faPrint} className="me-1" />
+            Print
+          </button>
+          <button
+            type="button"
+            className="btn btn-outline-danger btn-sm"
+            onClick={handleCancel}
+            title="Cancel and go back"
+          >
+            <FontAwesomeIcon icon={faTimes} className="me-1" />
+            Cancel
+          </button>
+          <button
+            type="button"
+            className="btn btn-success btn-sm"
+            onClick={formik.handleSubmit}
+            disabled={isLoading}
+            title="Save CMS-1500 data"
+          >
+            <FontAwesomeIcon icon={faSave} className="me-1" />
+            {isLoading ? "Saving..." : "Save"}
+          </button>
+        </div>
+      </div>
+
       <div className="table-responsive print-table">
         <table className="table table-bordered print-table">
           <tbody>
@@ -366,18 +528,30 @@ export default function InsuranceFormReplica() {
                           className="form-select form-select-sm me-2"
                           name="payor"
                           value={formik.values.payor}
-                          onChange={formik.handleChange}
+                          onChange={(e) => {
+                            formik.handleChange(e);
+                            // Auto-fill carrier when payor changes
+                            const selectedPayor = payors?.find(p => p._id === e.target.value);
+                            if (selectedPayor) {
+                              formik.setFieldValue('carrier', selectedPayor.payor);
+                            }
+                          }}
                         >
                           <option value="">Select Payor</option>
-                          <option value="aloha">ALOHA-ALOHACARE</option>
-                          <option value="other">Other Insurance</option>
+                          {payors && payors.map((p) => (
+                            <option key={p._id} value={p._id}>
+                              {p.payor}
+                            </option>
+                          ))}
                         </select>
                         <button
                           type="button"
                           className="btn btn-sm btn-outline-primary"
                           aria-label="refresh"
+                          onClick={handleRefreshPayors}
+                          title="Refresh Payors"
                         >
-                          ↻
+                          <FontAwesomeIcon icon={faSyncAlt} />
                         </button>
                       </div>
                     </div>
@@ -1648,6 +1822,9 @@ Suite 720, TX, 75254-8181`}
           .btn {
             display: none !important;
           }
+          .no-print, .cms-action-bar {
+            display: none !important;
+          }
           .table-responsive {
             overflow: visible !important;
             width: 100% !important;
@@ -1658,6 +1835,13 @@ Suite 720, TX, 75254-8181`}
             padding: 0 !important;
             margin: 0 !important;
           }
+        }
+        
+        .cms-action-bar {
+          position: sticky;
+          top: 0;
+          z-index: 100;
+          border: 1px solid #dee2e6;
         }
         
         .form-label-xs { font-size: 12px; font-weight: 600; }
@@ -1672,6 +1856,12 @@ Suite 720, TX, 75254-8181`}
         .date-input { width: 110px; }
         .calendar-icon { font-size: 14px; line-height: 1; opacity: .7; }
         .badge.bg-secondary-subtle { background: #f4f5f7; }
+        
+        /* Auto-populated field indicator */
+        .auto-filled {
+          background-color: #f8f9fa;
+          border-color: #6c757d;
+        }
         
         /* Additional print optimization */
         @media (max-width: 576px) {

@@ -83,3 +83,70 @@
   z-index: 1000;
 }
 
+/* Blocked Event Styles */
+.blocked-event {
+  background-color: #dc3545 !important;
+  border-color: #c82333 !important;
+  color: #fff !important;
+  cursor: not-allowed !important;
+}
+
+.blocked-header {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: bold;
+}
+
+.blocked-icon {
+  font-size: 12px;
+}
+
+.blocked-label {
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.blocked-type {
+  font-size: 8px;
+  text-transform: capitalize;
+  margin-top: 2px;
+  opacity: 0.9;
+}
+
+.blocked-reason {
+  font-size: 8px;
+  font-style: italic;
+  margin-top: 1px;
+  opacity: 0.8;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Blocked day background */
+.rbc-day-blocked {
+  background-color: #ffebee !important;
+}
+
+.rbc-day-blocked:hover {
+  background-color: #ffcdd2 !important;
+}
+
+/* Blocked event styling in calendar */
+.rbc-event-blocked {
+  background-color: #dc3545 !important;
+  border: 1px solid #c82333 !important;
+  cursor: not-allowed !important;
+}
+
+.rbc-event-blocked:hover {
+  background-color: #c82333 !important;
+}
+
+/* Make blocked events span full width for visibility */
+.rbc-event-blocked .rbc-event-content {
+  width: 100%;
+}
+

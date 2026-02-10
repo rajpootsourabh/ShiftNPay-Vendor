@@ -28,6 +28,7 @@ import {
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "react-toastify";
+import { OfficeAlertBanner } from "../../components";
 
 const ClientForm = () => {
   const [activeTab, setActiveTab] = useState("Personal");
@@ -133,7 +134,7 @@ const ClientForm = () => {
       otherEvvZip: "",
       otherEvvStartAddressType: "0",
       otherEvvEndAddressType: "0",
-      billingPayor: "0",
+      billingPayor: "",
       billingAddress1: "",
       billingAddress2: "",
       billingCity: "",
@@ -142,9 +143,9 @@ const ClientForm = () => {
       payor2: "",
       payor3: "",
       payor4: "",
-      physician2: null,
-      physician3: null,
-      physician4: null,
+      physician2: "",
+      physician3: "",
+      physician4: "",
       covidVaccinated: false,
       vaccineRefused: false,
       covidVaccinatedAlert: false,
@@ -219,6 +220,7 @@ const ClientForm = () => {
       // Needs
       needsMasterList: [],
       assignedNeeds: [],
+      clientNeeds: [],
 
       // Notes
       notes: [],
@@ -269,6 +271,49 @@ const ClientForm = () => {
       }
     });
 
+    // Handle date fields in arrays (reminders, supervisoryVisits, etc.)
+    const sanitizeDateFields = (obj) => {
+      if (!obj || typeof obj !== 'object') return obj;
+      
+      const dateFields = ['completedDate', 'dueDate', 'visitDate', 'createdDate', 'startDate', 'endDate'];
+      
+      for (const key in obj) {
+        if (dateFields.includes(key)) {
+          // Convert empty string to null for date fields
+          if (obj[key] === '' || obj[key] === 'Invalid Date') {
+            obj[key] = null;
+          }
+        } else if (Array.isArray(obj[key])) {
+          obj[key] = obj[key].map(item => sanitizeDateFields(item));
+        } else if (typeof obj[key] === 'object' && obj[key] !== null) {
+          sanitizeDateFields(obj[key]);
+        }
+      }
+      return obj;
+    };
+
+    // Sanitize reminders array specifically
+    if (data.reminders && Array.isArray(data.reminders)) {
+      data.reminders = data.reminders.map(reminder => {
+        const sanitized = { ...reminder };
+        if (sanitized.completedDate === '' || sanitized.completedDate === 'Invalid Date') {
+          sanitized.completedDate = null;
+        }
+        return sanitized;
+      });
+    }
+
+    // Sanitize supervisoryVisits array
+    if (data.supervisoryVisits && Array.isArray(data.supervisoryVisits)) {
+      data.supervisoryVisits = data.supervisoryVisits.map(visit => {
+        const sanitized = { ...visit };
+        if (sanitized.completedDate === '' || sanitized.completedDate === 'Invalid Date') {
+          sanitized.completedDate = null;
+        }
+        return sanitized;
+      });
+    }
+
     return data;
   };
 
@@ -308,7 +353,7 @@ const ClientForm = () => {
         'openBalance', 'overdueBalance', 'lastPaymentDate', 'invoiceType', 'invoiceStatus',
         'dateFrom', 'dateTo', 'invoices', 'payments'
       ],
-      Needs: ['needsMasterList', 'assignedNeeds'],
+      Needs: ['needsMasterList', 'assignedNeeds', 'clientNeeds'],
       Notes: ['notes'],
       Plan: [
         'enableMarDocumentation', 'marSchedule', 'marTimes', 'requireMarSignature',
@@ -697,19 +742,26 @@ const ClientForm = () => {
           serviceType: Yup.string().required("Service type is required"),
           status: Yup.string()
             .required("Status is required")
-            .oneOf(["active", "pending", "expired", "denied"]),
+            .oneOf(["active", "pending", "expired", "denied", "inactive"]),
           startDate: Yup.date().required("Start date is required"),
-          endDate: Yup.date().min(
-            Yup.ref("startDate"),
-            "End date must be after start date"
-          ),
-          frequency: Yup.string().required("Frequency is required"),
-          description: Yup.string()
-            .required("Description is required")
-            .max(1000, "Description too long"),
-          authNumber: Yup.string(),
+          endDate: Yup.date()
+            .nullable()
+            .notRequired()
+            .min(Yup.ref("startDate"), "End date must be after start date"),
+          unitsPerHour: Yup.number()
+            .required("Units per hour is required")
+            .positive("Units per hour must be a positive number")
+            .min(0.01, "Units per hour must be greater than 0"),
+          payor: Yup.string().required("Payor is required"),
+          authNumber: Yup.string().required("Authorization number is required"),
+          description: Yup.string().max(1000, "Description too long"),
           physicianNotes: Yup.string().max(1000, "Notes too long"),
           requireSignature: Yup.boolean(),
+          costPerHour: Yup.number().nullable(),
+          dailyHours: Yup.number().nullable(),
+          totalUnits: Yup.number().nullable(),
+          totalAmount: Yup.number().nullable(),
+          totalVisits: Yup.number().nullable(),
         })
       ),
     });
@@ -764,7 +816,7 @@ const ClientForm = () => {
             .max(500, "Description too long"),
           notes: Yup.string().max(1000, "Notes too long"),
           completed: Yup.boolean(),
-          completedDate: Yup.date(),
+          completedDate: Yup.date().nullable().notRequired(),
         })
       ),
     });
@@ -1086,14 +1138,30 @@ const ClientForm = () => {
     return <div>Loading...</div>;
   }
 
+  // Get client name for alert banner
+  const clientName = selectedClient 
+    ? `${selectedClient.firstName || ''} ${selectedClient.lastName || ''}`.trim() 
+    : '';
+
   return (
     <div className="client-form-container border">
+      {/* Office Alert Banner - Displays at top when "Alert when accessing client data" is enabled */}
+      {clientId && selectedClient && (
+        <OfficeAlertBanner
+          alertOnAccess={selectedClient.covidVaccinatedAlert}
+          alertMessage={selectedClient.alertText}
+          clientName={clientName}
+          dismissible={true}
+        />
+      )}
+
       <Formik
         initialValues={initialValues}
         validationSchema={validationSchema}
         onSubmit={handleSubmit}
         validateOnChange={false}
         validateOnBlur={false}
+        enableReinitialize={true}
       >
         {(formik) => (
           <Form>

@@ -122,12 +122,50 @@ export const fetchSchedulesByDateRange = createAsyncThunk(
   }
 );
 
+// Fetch client interruptions (blocked periods)
+export const fetchClientInterruptions = createAsyncThunk(
+  'schedule/fetchClientInterruptions',
+  async ({ clientId, start, end }, { rejectWithValue }) => {
+    try {
+      const params = { clientId };
+      if (start) params.start = start;
+      if (end) params.end = end;
+      
+      const response = await axios.get(`${API_URL}/client-interruptions`, {
+        headers: getHeaders(),
+        params
+      });
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || error.message);
+    }
+  }
+);
+
+// Check if scheduling is blocked for specific dates
+export const checkSchedulingBlocked = createAsyncThunk(
+  'schedule/checkSchedulingBlocked',
+  async ({ clientId, start, end }, { rejectWithValue }) => {
+    try {
+      const response = await axios.get(`${API_URL}/check-blocked`, {
+        headers: getHeaders(),
+        params: { clientId, start, end }
+      });
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || error.message);
+    }
+  }
+);
+
 const scheduleSlice = createSlice({
   name: 'schedule',
   initialState: {
     schedule: [],
     vendorJobs: [],
     currentSchedule: null,
+    clientInterruptions: [],
+    schedulingBlocked: null,
     loading: false,
     error: null,
     success: false
@@ -141,6 +179,10 @@ const scheduleSlice = createSlice({
     },
     setCurrentSchedule: (state, action) => {
       state.currentSchedule = action.payload;
+    },
+    clearClientInterruptions: (state) => {
+      state.clientInterruptions = [];
+      state.schedulingBlocked = null;
     },
 
   },
@@ -267,9 +309,33 @@ const scheduleSlice = createSlice({
       .addCase(fetchSchedulesByDateRange.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
+      })
+      // Fetch Client Interruptions
+      .addCase(fetchClientInterruptions.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(fetchClientInterruptions.fulfilled, (state, action) => {
+        state.loading = false;
+        state.clientInterruptions = action.payload.interruptions || [];
+      })
+      .addCase(fetchClientInterruptions.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+      // Check Scheduling Blocked
+      .addCase(checkSchedulingBlocked.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(checkSchedulingBlocked.fulfilled, (state, action) => {
+        state.loading = false;
+        state.schedulingBlocked = action.payload;
+      })
+      .addCase(checkSchedulingBlocked.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
       });
   }
 });
 
-export const { clearError, clearSuccess, setCurrentSchedule } = scheduleSlice.actions;
+export const { clearError, clearSuccess, setCurrentSchedule, clearClientInterruptions } = scheduleSlice.actions;
 export default scheduleSlice.reducer;

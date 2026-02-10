@@ -5,10 +5,16 @@ import "react-big-calendar/lib/css/react-big-calendar.css";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchCareGiverByVendor } from "../../../../store/IDB_SYS/Clients/careGiverSlice";
 import { fetchClientByVendor } from "../../../../store/IDB_SYS/Clients/clientSlice";
-import { fetchSchedules, updateSchedule } from "../../../../store/IDB_SYS/scheduler/scheduleSlice";
+import { 
+  fetchSchedules, 
+  updateSchedule, 
+  fetchClientInterruptions,
+  clearClientInterruptions 
+} from "../../../../store/IDB_SYS/scheduler/scheduleSlice";
 import "./month.css";
 import { useParams } from "react-router-dom";
 import SchedulePopup from "../../../components/Popup/SchedulePopup";
+import { toast } from "react-toastify";
 
 const localizer = momentLocalizer(moment);
 
@@ -35,11 +41,12 @@ const DataGrid = ({isPopupOpen , togglePopup, setIsPopupOpen}) => {
   
   const { careGiver } = useSelector((state) => state.careGiver);
   const { clients } = useSelector((state) => state.client);
-  const { schedule, loading: scheduleLoading } = useSelector(
+  const { schedule, loading: scheduleLoading, clientInterruptions } = useSelector(
     (state) => state.schedule
   );
 
   const [events, setEvents] = useState([]);
+  const [blockedEvents, setBlockedEvents] = useState([]); // Blocked date events from interruptions
   const [formData, setFormData] = useState({ title: "", description: "" });
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedClient, setSelectedClient] = useState("");
@@ -56,6 +63,64 @@ const DataGrid = ({isPopupOpen , togglePopup, setIsPopupOpen}) => {
     dispatch(fetchClientByVendor());
   }, [dispatch]);
 
+  // Fetch client interruptions when a client is selected
+  useEffect(() => {
+    if (selectedClient) {
+      const startOfMonth = moment(currentDate).startOf('month').format('YYYY-MM-DD');
+      const endOfMonth = moment(currentDate).endOf('month').format('YYYY-MM-DD');
+      
+      dispatch(fetchClientInterruptions({
+        clientId: selectedClient,
+        start: startOfMonth,
+        end: endOfMonth
+      }));
+    } else {
+      dispatch(clearClientInterruptions());
+      setBlockedEvents([]);
+    }
+  }, [selectedClient, currentDate, dispatch]);
+
+  // Convert client interruptions to blocked calendar events
+  useEffect(() => {
+    if (!clientInterruptions || clientInterruptions.length === 0) {
+      setBlockedEvents([]);
+      return;
+    }
+
+    const startOfMonth = moment(currentDate).startOf('month');
+    const endOfMonth = moment(currentDate).endOf('month');
+
+    const blocked = clientInterruptions.map((interruption, index) => {
+      const intStart = moment(interruption.startDate);
+      const intEnd = moment(interruption.endDate);
+      
+      // Adjust dates to be within the current month view
+      const eventStart = moment.max(intStart, startOfMonth).toDate();
+      const eventEnd = moment.min(intEnd, endOfMonth).endOf('day').toDate();
+
+      return {
+        id: `blocked-${index}-${interruption.startDate}`,
+        title: `🚫 Service Blocked${interruption.type ? ` (${interruption.type})` : ''}`,
+        start: eventStart,
+        end: eventEnd,
+        allDay: true,
+        resource: {
+          type: 'interruption',
+          interruption: interruption
+        },
+        extendedProps: {
+          type: 'interruption',
+          interruptionType: interruption.type,
+          reason: interruption.reason,
+          status: interruption.status,
+          isBlocked: true
+        }
+      };
+    });
+
+    setBlockedEvents(blocked);
+  }, [clientInterruptions, currentDate]);
+
   useEffect(() => {
     if (selectedCaregiver) {
       fetchDataForCurrentMonth();
@@ -68,7 +133,7 @@ const DataGrid = ({isPopupOpen , togglePopup, setIsPopupOpen}) => {
 
   useEffect(() => {
     combineEvents();
-  }, [schedule, currentDate]); // Added currentDate to re-render events on month change
+  }, [schedule, currentDate, blockedEvents]); // Added blockedEvents dependency
 
   const fetchDataForCurrentMonth = (newDate) => {
     setIsLoading(true);
@@ -100,67 +165,65 @@ const DataGrid = ({isPopupOpen , togglePopup, setIsPopupOpen}) => {
 };
 
 const combineEvents = useCallback(() => {
-  if (!schedule || schedule.length === 0) {
-    setEvents([]);
-    return;
-  }
-
-  const scheduleEvents = schedule.flatMap((scheduleItem) => {
-    const events = [];
-    const startOfMonth = moment(currentDate).startOf('month');
-    const endOfMonth = moment(currentDate).endOf('month');
-    
-    const scheduleStart = moment(scheduleItem.start);
-    const scheduleEnd = moment(scheduleItem.end);
-
-    // For recurring events with specific days
-    if (scheduleItem.frequency && scheduleItem.frequency !== "none" && scheduleItem.days) {
-      const daysOfWeek = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
-
-      let currentDateIter = moment.max(scheduleStart.clone(), startOfMonth);
-      const iterationEndDate = moment.min(scheduleEnd.clone(), endOfMonth);
-
-      while (currentDateIter.isSameOrBefore(iterationEndDate)) {
-        const dayName = daysOfWeek[currentDateIter.day()].toLowerCase();
-
-        if (scheduleItem.days[dayName]) {
-          const eventStart = currentDateIter.clone()
-            .set({
-              hour: scheduleStart.hour(),
-              minute: scheduleStart.minute(),
-              second: 0,
-              millisecond: 0
-            });
-
-          const eventEnd = currentDateIter.clone()
-            .set({
-              hour: scheduleEnd.hour(),
-              minute: scheduleEnd.minute(),
-              second: 0,
-              millisecond: 0
-            });
-
-          // Only add if it's within the current month
-          if (eventStart.isSameOrAfter(startOfMonth) && eventEnd.isSameOrBefore(endOfMonth)) {
-            events.push(createEventObject(scheduleItem, eventStart.toDate(), eventEnd.toDate()));
-          }
-        }
-        currentDateIter.add(1, "day");
-      }
-    } 
-    // For non-recurring events
-    else {
-      // Check if the single event falls within the current month
-      if (scheduleStart.isSameOrAfter(startOfMonth) && scheduleEnd.isSameOrBefore(endOfMonth)) {
-        events.push(createEventObject(scheduleItem, scheduleStart.toDate(), scheduleEnd.toDate()));
-      }
-    }
-
-    return events;
-  });
+  const scheduleEvents = [];
   
-  setEvents(scheduleEvents);
-}, [schedule, currentDate]);
+  if (schedule && schedule.length > 0) {
+    schedule.forEach((scheduleItem) => {
+      const startOfMonth = moment(currentDate).startOf('month');
+      const endOfMonth = moment(currentDate).endOf('month');
+      
+      const scheduleStart = moment(scheduleItem.start);
+      const scheduleEnd = moment(scheduleItem.end);
+
+      // For recurring events with specific days
+      if (scheduleItem.frequency && scheduleItem.frequency !== "none" && scheduleItem.days) {
+        const daysOfWeek = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
+
+        let currentDateIter = moment.max(scheduleStart.clone(), startOfMonth);
+        const iterationEndDate = moment.min(scheduleEnd.clone(), endOfMonth);
+
+        while (currentDateIter.isSameOrBefore(iterationEndDate)) {
+          const dayName = daysOfWeek[currentDateIter.day()].toLowerCase();
+
+          if (scheduleItem.days[dayName]) {
+            const eventStart = currentDateIter.clone()
+              .set({
+                hour: scheduleStart.hour(),
+                minute: scheduleStart.minute(),
+                second: 0,
+                millisecond: 0
+              });
+
+            const eventEnd = currentDateIter.clone()
+              .set({
+                hour: scheduleEnd.hour(),
+                minute: scheduleEnd.minute(),
+                second: 0,
+                millisecond: 0
+              });
+
+            // Only add if it's within the current month
+            if (eventStart.isSameOrAfter(startOfMonth) && eventEnd.isSameOrBefore(endOfMonth)) {
+              scheduleEvents.push(createEventObject(scheduleItem, eventStart.toDate(), eventEnd.toDate()));
+            }
+          }
+          currentDateIter.add(1, "day");
+        }
+      } 
+      // For non-recurring events
+      else {
+        // Check if the single event falls within the current month
+        if (scheduleStart.isSameOrAfter(startOfMonth) && scheduleEnd.isSameOrBefore(endOfMonth)) {
+          scheduleEvents.push(createEventObject(scheduleItem, scheduleStart.toDate(), scheduleEnd.toDate()));
+        }
+      }
+    });
+  }
+  
+  // Merge schedule events with blocked events (interruptions)
+  const allEvents = [...scheduleEvents, ...blockedEvents];
+  setEvents(allEvents);
+}, [schedule, currentDate, blockedEvents]);
 
 
  const createEventObject = (schedule, start, end) => {
@@ -237,11 +300,39 @@ const combineEvents = useCallback(() => {
   };
 
   const handleEventClick = (event) => {
+    // Don't allow editing blocked/interruption events
+    if (event.extendedProps?.type === 'interruption' || event.extendedProps?.isBlocked) {
+      toast.warning(`Service is blocked: ${event.extendedProps?.reason || 'Service Interruption'}`);
+      return;
+    }
+    
     console.log('(event.resource : ',event.resource)
     setSelectedEvent(event.resource);
     
     setShowEditModal(true);
   };
+
+  // Helper function to check if a date is within any blocked period
+  const isDateBlocked = useCallback((date) => {
+    if (!clientInterruptions || clientInterruptions.length === 0) return false;
+    
+    const checkDate = moment(date);
+    return clientInterruptions.some(interruption => {
+      const start = moment(interruption.startDate);
+      const end = moment(interruption.endDate);
+      return checkDate.isBetween(start, end, 'day', '[]'); // inclusive
+    });
+  }, [clientInterruptions]);
+
+  // Handle slot selection (when user clicks on empty date)
+  const handleSelectSlot = useCallback((slotInfo) => {
+    if (selectedClient && isDateBlocked(slotInfo.start)) {
+      toast.warning('Cannot schedule on blocked dates. Client has an active service interruption.');
+      return;
+    }
+    // Allow opening the popup if not blocked
+    // The popup will handle the actual scheduling
+  }, [selectedClient, isDateBlocked]);
 
   // Improved handleSave function to prevent duplicates
   const handleSave = async () => {
@@ -265,8 +356,29 @@ const combineEvents = useCallback(() => {
   };
 
  const renderEventContent = (eventInfo) => {
-  const { extendedProps, start, end } = eventInfo.event;
+  const { extendedProps, start, end, title } = eventInfo.event;
   
+  // Render blocked/interruption events differently
+  if (extendedProps?.type === 'interruption' || extendedProps?.isBlocked) {
+    return (
+      <div className="event-card blocked-event">
+        <div className="blocked-header">
+          <span className="blocked-icon">🚫</span>
+          <span className="blocked-label">BLOCKED</span>
+        </div>
+        {extendedProps?.interruptionType && (
+          <div className="blocked-type">{extendedProps.interruptionType}</div>
+        )}
+        {extendedProps?.reason && (
+          <div className="blocked-reason" title={extendedProps.reason}>
+            {extendedProps.reason}
+          </div>
+        )}
+      </div>
+    );
+  }
+  
+  // Regular schedule event
   return (
     <div className="event-card">
       <div className="event-header">
@@ -301,10 +413,9 @@ const combineEvents = useCallback(() => {
           value={selectedClient}
           onChange={(e) => setSelectedClient(e.target.value)}
           style={{ width: "200px" }}
-          // disabled={true}
         >
-          <option value="" disabled>
-            Clients
+          <option value="">
+            All Clients
           </option>
           {clients.map((row) => (
             <option key={row._id} value={row._id}>
@@ -380,6 +491,35 @@ const combineEvents = useCallback(() => {
               event: renderEventContent,
             },
           }}
+          eventPropGetter={(event) => {
+            // Style blocked events differently
+            if (event.extendedProps?.type === 'interruption' || event.extendedProps?.isBlocked) {
+              return {
+                className: 'rbc-event-blocked',
+                style: {
+                  backgroundColor: '#dc3545',
+                  borderColor: '#c82333',
+                  color: '#fff',
+                  opacity: 0.9,
+                }
+              };
+            }
+            return {};
+          }}
+          dayPropGetter={(date) => {
+            // Highlight blocked days
+            if (selectedClient && isDateBlocked(date)) {
+              return {
+                className: 'rbc-day-blocked',
+                style: {
+                  backgroundColor: '#ffebee',
+                }
+              };
+            }
+            return {};
+          }}
+          selectable={true}
+          onSelectSlot={handleSelectSlot}
           style={{ 
             height: "calc(100vh - 180px)",
             minHeight: "600px",

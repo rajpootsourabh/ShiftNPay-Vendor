@@ -1,22 +1,25 @@
 import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Form, Button, Table, Badge, Modal, Alert, Row, Col } from 'react-bootstrap';
-import { FaClipboardCheck, FaCalendarAlt, FaNotesMedical } from 'react-icons/fa';
+import { FaClipboardCheck, FaCalendarAlt, FaNotesMedical, FaExclamationCircle } from 'react-icons/fa';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCheck, faSave } from '@fortawesome/free-solid-svg-icons';
 import { fetchAllServiceCodes } from '../../../../store/IDB_SYS/Clients/serviceCodeSlice';
 import { fetchCareGiverByVendor } from '../../../../store/IDB_SYS/Clients/careGiverSlice';
+import { fetchPayorByVendor } from '../../../../store/IDB_SYS/Clients/payorSlice';
 
 const Service = ({ formik, clientData, onSaveTab, isSaved, isSaving }) => {
   const dispatch = useDispatch();
   const { allServiceCodes: serviceCodeOptions, loading: serviceCodeLoading } = useSelector((state) => state.serviceCode);
   const { careGiver: caregivers, loading: caregiverLoading } = useSelector((state) => state.careGiver);
+  const { payor: payors, loading: payorLoading } = useSelector((state) => state.payor);
 
   const [showModal, setShowModal] = useState(false);
   const [editIndex, setEditIndex] = useState(null);
   const [showInactive, setShowInactive] = useState(false);
   const [serviceSearch, setServiceSearch] = useState('');
   const [showServiceDropdown, setShowServiceDropdown] = useState(false);
+  const [validationErrors, setValidationErrors] = useState({});
   const [newServiceOrder, setNewServiceOrder] = useState({
     serviceType: '',
     costPerHour: '',
@@ -55,6 +58,7 @@ const Service = ({ formik, clientData, onSaveTab, isSaved, isSaving }) => {
   useEffect(() => {
     dispatch(fetchAllServiceCodes());
     dispatch(fetchCareGiverByVendor());
+    dispatch(fetchPayorByVendor({ limit: 1000 })); // Fetch all payors
   }, [dispatch]);
 
   // Helper function to get caregiver name by ID
@@ -135,9 +139,57 @@ const Service = ({ formik, clientData, onSaveTab, isSaved, isSaving }) => {
     }
   };
 
+  // Validate Service Order fields
+  const validateServiceOrder = () => {
+    const errors = {};
+
+    // Service Type is required
+    if (!newServiceOrder.serviceType || newServiceOrder.serviceType.trim() === '') {
+      errors.serviceType = 'Service Type is required';
+    }
+
+    // Units Per Hour is required and must be > 0
+    const unitsPerHour = parseFloat(newServiceOrder.unitsPerHour);
+    if (!newServiceOrder.unitsPerHour || newServiceOrder.unitsPerHour === '') {
+      errors.unitsPerHour = 'Units/Hour is required';
+    } else if (isNaN(unitsPerHour) || unitsPerHour <= 0) {
+      errors.unitsPerHour = 'Units/Hour must be a positive number';
+    }
+
+    // Payor is required
+    if (!newServiceOrder.payor || newServiceOrder.payor.trim() === '') {
+      errors.payor = 'Payor is required';
+    }
+
+    // Authorization Number is required
+    if (!newServiceOrder.authNumber || newServiceOrder.authNumber.trim() === '') {
+      errors.authNumber = 'Authorization Number is required';
+    }
+
+    // Start Date is required
+    if (!newServiceOrder.startDate) {
+      errors.startDate = 'Start Date is required';
+    }
+
+    setValidationErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
   const handleSaveServiceOrder = () => {
+    // Validate before saving
+    if (!validateServiceOrder()) {
+      return; // Block save if validation fails
+    }
+
     const orderData = {
       ...newServiceOrder,
+      // Ensure numeric fields are properly converted
+      unitsPerHour: parseFloat(newServiceOrder.unitsPerHour) || 0,
+      costPerHour: parseFloat(newServiceOrder.costPerHour) || 0,
+      dailyHours: parseFloat(newServiceOrder.dailyHours) || 0,
+      totalUnits: parseFloat(newServiceOrder.totalUnits) || 0,
+      totalAmount: parseFloat(newServiceOrder.totalAmount) || 0,
+      totalVisits: parseInt(newServiceOrder.totalVisits) || 0,
       id: editIndex !== null ? formik.values.serviceOrders[editIndex].id : Date.now(),
       enteredDate: editIndex !== null ? formik.values.serviceOrders[editIndex].enteredDate : new Date().toISOString(),
       enteredBy: editIndex !== null ? formik.values.serviceOrders[editIndex].enteredBy : 'Current User'
@@ -156,6 +208,7 @@ const Service = ({ formik, clientData, onSaveTab, isSaved, isSaving }) => {
 
     setShowModal(false);
     setEditIndex(null);
+    setValidationErrors({}); // Clear validation errors
     setNewServiceOrder({
       serviceType: '',
       costPerHour: '',
@@ -192,6 +245,7 @@ const Service = ({ formik, clientData, onSaveTab, isSaved, isSaving }) => {
   };
 
   const handleModalShow = (index = null) => {
+    setValidationErrors({}); // Clear validation errors when opening modal
     if (index !== null) {
       // Editing existing order
       const order = formik.values.serviceOrders[index];
@@ -368,10 +422,11 @@ const Service = ({ formik, clientData, onSaveTab, isSaved, isSaving }) => {
           <thead>
             <tr>
               <th>Service Type</th>
+              <th>Units/Hr</th>
+              <th>Payor</th>
+              <th>Auth #</th>
               <th>Start Date</th>
               <th>End Date</th>
-              <th>Frequency</th>
-              <th>Caregiver</th>
               <th>Status</th>
               <th>Actions</th>
             </tr>
@@ -381,11 +436,21 @@ const Service = ({ formik, clientData, onSaveTab, isSaved, isSaving }) => {
               const originalIndex = formik.values.serviceOrders.findIndex(
                 o => o.id === order.id
               );
+              // Get payor name from payors list
+              const payorObj = payors?.find(p => p._id === order.payor);
+              const payorName = payorObj?.name || payorObj?.payorName || order.payor || 'N/A';
               return (
                 <tr key={order.id || index}>
                   <td>
                     <div className="fw-bold">{order.serviceType}</div>
                   </td>
+                  <td>{order.unitsPerHour || 'N/A'}</td>
+                  <td>
+                    <span className={order.payor ? 'text-dark' : 'text-muted'}>
+                      {payorName}
+                    </span>
+                  </td>
+                  <td>{order.authNumber || 'N/A'}</td>
                   <td>{order.startDate ? new Date(order.startDate).toLocaleDateString() : 'N/A'}</td>
                   <td>
                     {order.endDate ? (
@@ -393,12 +458,6 @@ const Service = ({ formik, clientData, onSaveTab, isSaved, isSaving }) => {
                     ) : (
                       <span className="text-muted">N/A</span>
                     )}
-                  </td>
-                  <td>{order.frequency || 'N/A'}</td>
-                  <td>
-                    <span className={order.caregiver ? 'text-dark' : 'text-muted'}>
-                      {getCaregiverName(order.caregiver)}
-                    </span>
                   </td>
                   <td>
                     <Badge
@@ -454,11 +513,24 @@ const Service = ({ formik, clientData, onSaveTab, isSaved, isSaving }) => {
             <h5>Client: {getClientName()}</h5>
           </div>
 
+          {/* Validation Errors Summary */}
+          {Object.keys(validationErrors).length > 0 && (
+            <Alert variant="danger" className="mb-3">
+              <FaExclamationCircle className="me-2" />
+              Please fix the following errors before saving:
+              <ul className="mb-0 mt-2">
+                {Object.values(validationErrors).map((error, idx) => (
+                  <li key={idx}>{error}</li>
+                ))}
+              </ul>
+            </Alert>
+          )}
+
           {/* Section 1: Service Info */}
           <Row className="mb-3">
             <Col md={4}>
               <Form.Group>
-                <Form.Label>Service Type</Form.Label>
+                <Form.Label>Service Type <span className="text-danger">*</span></Form.Label>
                 <div className="custom-searchable-dropdown" style={{ position: 'relative' }}>
                   <Form.Control
                     type="text"
@@ -470,7 +542,7 @@ const Service = ({ formik, clientData, onSaveTab, isSaved, isSaving }) => {
                     }}
                     onFocus={() => setShowServiceDropdown(true)}
                     onBlur={() => setShowServiceDropdown(false)}
-                    className="mb-1"
+                    className={`mb-1 ${validationErrors.serviceType ? 'is-invalid' : ''}`}
                   />
                   {showServiceDropdown && (
                     <div
@@ -530,6 +602,9 @@ const Service = ({ formik, clientData, onSaveTab, isSaved, isSaving }) => {
                       </span>
                     </div>
                   )}
+                  {validationErrors.serviceType && (
+                    <div className="invalid-feedback d-block">{validationErrors.serviceType}</div>
+                  )}
                 </div>
               </Form.Group>
             </Col>
@@ -546,6 +621,27 @@ const Service = ({ formik, clientData, onSaveTab, isSaved, isSaving }) => {
             </Col>
             <Col md={4}>
               <Form.Group>
+                <Form.Label>Units / Hour <span className="text-danger">*</span></Form.Label>
+                <Form.Control
+                  type="number"
+                  step="0.01"
+                  min="0.01"
+                  value={newServiceOrder.unitsPerHour}
+                  onChange={(e) => setNewServiceOrder({ ...newServiceOrder, unitsPerHour: e.target.value })}
+                  placeholder="1.00"
+                  className={validationErrors.unitsPerHour ? 'is-invalid' : ''}
+                />
+                {validationErrors.unitsPerHour && (
+                  <div className="invalid-feedback">{validationErrors.unitsPerHour}</div>
+                )}
+              </Form.Group>
+            </Col>
+          </Row>
+
+          {/* Row 2: Daily Hours, Payor, Auth Number */}
+          <Row className="mb-3">
+            <Col md={4}>
+              <Form.Group>
                 <Form.Label>Daily Hours</Form.Label>
                 <Form.Control
                   type="number"
@@ -555,8 +651,44 @@ const Service = ({ formik, clientData, onSaveTab, isSaved, isSaving }) => {
                 />
               </Form.Group>
             </Col>
+            <Col md={4}>
+              <Form.Group>
+                <Form.Label>Payor <span className="text-danger">*</span></Form.Label>
+                <Form.Select
+                  value={newServiceOrder.payor}
+                  onChange={(e) => setNewServiceOrder({ ...newServiceOrder, payor: e.target.value })}
+                  className={validationErrors.payor ? 'is-invalid' : ''}
+                >
+                  <option value="">Select Payor</option>
+                  {payors && payors.map((p) => (
+                    <option key={p._id} value={p._id}>
+                      {p.name || p.payorName || 'Unnamed Payor'}
+                    </option>
+                  ))}
+                </Form.Select>
+                {validationErrors.payor && (
+                  <div className="invalid-feedback">{validationErrors.payor}</div>
+                )}
+              </Form.Group>
+            </Col>
+            <Col md={4}>
+              <Form.Group>
+                <Form.Label>Authorization Number <span className="text-danger">*</span></Form.Label>
+                <Form.Control
+                  type="text"
+                  value={newServiceOrder.authNumber}
+                  onChange={(e) => setNewServiceOrder({ ...newServiceOrder, authNumber: e.target.value })}
+                  placeholder="Enter auth number"
+                  className={validationErrors.authNumber ? 'is-invalid' : ''}
+                />
+                {validationErrors.authNumber && (
+                  <div className="invalid-feedback">{validationErrors.authNumber}</div>
+                )}
+              </Form.Group>
+            </Col>
           </Row>
 
+          {/* Row 3: Diagnosis, Patient Number, Status */}
           <Row className="mb-3">
             <Col md={4}>
               <Form.Group>
@@ -625,12 +757,16 @@ const Service = ({ formik, clientData, onSaveTab, isSaved, isSaving }) => {
             <Row className="mb-3">
               <Col md={3}>
                 <Form.Group>
-                  <Form.Label>Start Date</Form.Label>
+                  <Form.Label>Start Date <span className="text-danger">*</span></Form.Label>
                   <Form.Control
                     type="date"
                     value={newServiceOrder.startDate}
                     onChange={(e) => setNewServiceOrder({ ...newServiceOrder, startDate: e.target.value })}
+                    className={validationErrors.startDate ? 'is-invalid' : ''}
                   />
+                  {validationErrors.startDate && (
+                    <div className="invalid-feedback">{validationErrors.startDate}</div>
+                  )}
                 </Form.Group>
               </Col>
               <Col md={3}>
@@ -853,10 +989,6 @@ const Service = ({ formik, clientData, onSaveTab, isSaved, isSaving }) => {
           <Button
             variant="primary"
             onClick={handleSaveServiceOrder}
-            disabled={
-              !newServiceOrder.serviceType ||
-              !newServiceOrder.startDate
-            }
           >
             {editIndex !== null ? 'Update' : 'Add'} Service Order
           </Button>
