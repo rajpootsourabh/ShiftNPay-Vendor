@@ -1,370 +1,1006 @@
 import React, { useEffect, useState } from "react";
-import { useDispatch, useSelector } from "react-redux";
-import { Button } from "reactstrap";
-import Modal from "react-bootstrap/Modal";
-import Swal from "sweetalert2";
-import { deleteDocument, fetchDocuments, uploadDocument } from "../store/Product/documentSlice";
-import { formatDate, formatFileSize } from "../Helper/functions";
-import { debounce } from "lodash";
-const BaseUrl = process.env.REACT_APP_BASH_DOC_URL;
+import { getPdfForm } from "../PdfForms";
+
+const onboardingForms = [
+    { id: 1, code: "1020", name: "Employment Application", type: "Pre-Hire", template: "/forms/employment-application.pdf" },
+    { id: 2, code: "1021", name: "Equal Employment Opportunity", type: "Pre-Hire", template: "/forms/equal-opportunity.pdf" },
+    { id: 3, code: "1050", name: "Skills Checklist", type: "Pre-Hire", template: "/forms/skills-checklist.pdf" },
+    { id: 4, code: "1060", name: "Request for Reference", type: "Pre-Hire", template: "/forms/request-for-reference.pdf" },
+    { id: 5, code: "1070", name: "Background Check Authorization", type: "Pre-Hire", template: "/forms/background-check.pdf" },
+    { id: 6, code: "1204", name: "Care Associate Availability", type: "Pre-Hire", template: "/forms/care-availability.pdf" },
+    { id: 7, code: "1010", name: "Employee Personal Action", type: "Onboarding", template: "/forms/employee-personal-action.pdf" },
+    { id: 8, code: "1201", name: "Handbook Acknowledgement", type: "Onboarding", template: "/forms/handbook-acknowledgment.pdf" },
+    { id: 9, code: "1202", name: "Orientation Acknowledgement", type: "Onboarding", template: "/forms/orientation-acknowledgements.pdf" },
+    { id: 10, code: "1203", name: "Orientation Curriculum", type: "Onboarding", template: "/forms/orientation-curriculum.pdf" },
+    { id: 11, code: "1220", name: "Abuse & Neglect Policy", type: "Onboarding", template: "/forms/abuse-neglect-policy.pdf" },
+    { id: 12, code: "1530", name: "Care Associate Schedule Acknowledgement", type: "Onboarding", template: "/forms/care-schedule-acknowledgement.pdf" },
+    { id: 13, code: "1600", name: "Emergency Contact Information", type: "Onboarding", template: "/forms/emergency-contact.pdf" },
+    { id: 14, code: "1720", name: "Hepatitis B Consent", type: "Onboarding", template: "/forms/hepatitis-b-consent.pdf" },
+    { id: 15, code: "1740", name: "Pre-Employment Drug Consent", type: "Onboarding", template: "/forms/drug-consent.pdf" },
+    { id: 16, code: "2900", name: "ID Agreement", type: "Onboarding", template: "/forms/id-agreement.pdf" },
+    { id: 17, code: "4000", name: "Nondisclosure / Noncompete", type: "Onboarding", template: "/forms/nondisclosure-noncompete.pdf" },
+    { id: 18, code: "I-9", name: "I-9 Employment Eligibility", type: "Onboarding", template: "/forms/i9-form.pdf" },
+    { id: 19, code: "W-4", name: "W-4 Tax Form", type: "Onboarding", template: "/forms/w4-form-2023.pdf" }
+];
+
 const DocumentList = () => {
-    const dispatch = useDispatch();
+    const [selectedFormId, setSelectedFormId] = useState(null);
 
-    const [search, setSearch] = useState("");
-    const [date, setDate] = useState("");
-    const [showModal, setShowModal] = useState(false);
-    const [selectedFile, setSelectedFile] = useState(null);
-    const { documents, loading } = useSelector((state) => state.documents);
-    const [documentId, setDocumentId] = useState("");
-
+    // Lock body scroll when onboarding form modal is open
     useEffect(() => {
-        const fetchDocs = debounce(() => {
-            dispatch(fetchDocuments({ date, search }));
-        }, 500);
-        fetchDocs();
-        return () => fetchDocs.cancel();
-    }, [search, date]);
-
-    const handleSearch = (e) => setSearch(e.target.value);
-    const handleDateChange = (e) => setDate(e.target.value);
-
-    const handleFileSelect = (e) => setSelectedFile(e.target.files[0]);
-    const handleRemoveFile = () => setSelectedFile(null);
-
-    const handleFileUpload = async () => {
-
-        if (!documentId.trim()) {
-            Swal.fire("Error", "Please Enter Document Id.", "error");;
-            return;
+        if (selectedFormId) {
+            document.body.style.overflow = "hidden";
+        } else {
+            document.body.style.overflow = "";
         }
+        return () => { document.body.style.overflow = ""; };
+    }, [selectedFormId]);
 
-        if (!selectedFile) {
-            Swal.fire("Error", "Please select a file to upload.", "error");
-            return;
-        }
-
-       
-
-
-        const formData = new FormData();
-        formData.append("file", selectedFile);
-        formData.append("documentId", `${documentId}`);
-
-        try {
-            const response = await dispatch(uploadDocument(formData)).unwrap(); // Ensure proper handling
-
-            if (response.success) { // Check API response (modify based on your API structure)
-                Swal.fire("Success", "File uploaded successfully", "success");
-                setSelectedFile(null);
-                setShowModal(false); // Hide modal only on success
-            } else {
-                Swal.fire("Error", response.message || "File upload failed", "error");
-            }
-        } catch (error) {
-            Swal.fire("Error", error.message || "Something went wrong", "error");
-        } finally {
-        }
-    };
-
-
-    const handleDelete = async (itemId) => {
-        const result = await Swal.fire({
-            title: "Are you sure?",
-            text: "You won't be able to revert this!",
-            icon: "warning",
-            showCancelButton: true,
-            confirmButtonColor: "#3085d6",
-            cancelButtonColor: "#d33",
-            confirmButtonText: "Yes, delete it!",
-            showLoaderOnConfirm: true,
-            allowOutsideClick: false,
-            allowEscapeKey: false,
-            preConfirm: async () => {
-                try {
-                    await dispatch(deleteDocument(itemId)).unwrap(); // Ensure proper error handling
-                    return true; // Resolve the promise successfully
-                } catch (error) {
-                    Swal.showValidationMessage(error?.message || "Failed to delete the file.");
-                    return false; // Keep the alert open
+    // Fix signature canvas buffer resolution to match CSS display size.
+    // Without explicit width/height canvasProps, canvases default to 300×150 buffer
+    // while CSS (Tailwind w-full h-40) stretches them visually. This fixes the mismatch
+    // so toDataURL() captures the full-resolution signature for PDF embedding.
+    useEffect(() => {
+        if (!selectedFormId) return;
+        let observer = null;
+        const fixCanvas = (canvas) => {
+            if (canvas.width > 300 || canvas.height > 150) return;
+            requestAnimationFrame(() => {
+                const w = canvas.offsetWidth;
+                const h = canvas.offsetHeight;
+                if (w > 0 && h > 0 && (canvas.width !== w || canvas.height !== h)) {
+                    canvas.width = w;
+                    canvas.height = h;
                 }
-            },
-        });
+            });
+        };
+        const initTimer = setTimeout(() => {
+            const body = window.document.querySelector('.onboarding-form-body');
+            if (!body) return;
+            body.querySelectorAll('canvas').forEach(fixCanvas);
+            observer = new MutationObserver((mutations) => {
+                for (const m of mutations) {
+                    for (const node of m.addedNodes) {
+                        if (node.nodeType !== 1) continue;
+                        if (node.tagName === 'CANVAS') fixCanvas(node);
+                        else if (node.querySelectorAll) {
+                            node.querySelectorAll('canvas').forEach(fixCanvas);
+                        }
+                    }
+                }
+            });
+            observer.observe(body, { childList: true, subtree: true });
+        }, 400);
+        return () => {
+            clearTimeout(initTimer);
+            if (observer) observer.disconnect();
+        };
+    }, [selectedFormId]);
 
-        if (result.isConfirmed) {
-            Swal.fire("Deleted!", "Your file has been deleted.", "success");
-        }
-    };
+    // Inject polished form styles + Tailwind utility classes the PdfForm components need
+    useEffect(() => {
+        if (document.getElementById("onboarding-modal-styles")) return;
+        const style = document.createElement("style");
+        style.id = "onboarding-modal-styles";
+        style.textContent = `
+            /* ===== ANIMATIONS ===== */
+            @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+            @keyframes modalSlideIn { from { opacity: 0; transform: scale(0.96) translateY(12px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+            @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 
+            /* ===== NEUTRALIZE FORM'S INNER MODAL — flow inside our container ===== */
+            .onboarding-form-body .fixed.inset-0 {
+                position: static !important;
+                background-color: transparent !important;
+                display: block !important;
+                padding: 0 !important;
+                z-index: auto !important;
+            }
+            .onboarding-form-body .fixed.inset-0 > .bg-white.rounded-lg {
+                max-width: 780px !important;
+                margin: 0 auto !important;
+                max-height: none !important;
+                border-radius: 0 !important;
+                box-shadow: none !important;
+                overflow: visible !important;
+                background: #fff !important;
+            }
+            /* Hide form's own header/close (our green header handles that) */
+            .onboarding-form-body .fixed.inset-0 > .bg-white .flex.justify-between.items-center.p-6.border-b {
+                display: none !important;
+            }
 
+            /* ===== FORM MAX-WIDTH CONTAINER ===== */
+            .onboarding-form-body .p-6.overflow-y-auto {
+                max-width: 780px !important;
+                margin: 0 auto !important;
+                max-height: none !important;
+                overflow: visible !important;
+                padding: 32px 40px 40px !important;
+                background: #fff !important;
+            }
 
-    const searchFiles = () => {
-        dispatch(fetchDocuments({ date, search }));
-    };
-    const handleView = (fileUrl) => {
-        window.open(`${BaseUrl + fileUrl}`, "_blank");
-    };
-    const handleReset = () => {
-        setSearch("");
-        setDate("");
-        dispatch(fetchDocuments({ date: "", search: "" }));
-    };
+            /* ===== SECTION HEADERS (h3) — bold, divider line ===== */
+            .onboarding-form-body h3.text-lg.font-semibold {
+                font-family: 'Poppins', sans-serif !important;
+                font-size: 15px !important;
+                font-weight: 700 !important;
+                color: #111827 !important;
+                letter-spacing: 0.01em !important;
+                text-transform: uppercase !important;
+                margin: 32px 0 16px 0 !important;
+                padding: 0 0 12px 0 !important;
+                border-bottom: 2px solid #e5e7eb !important;
+                display: flex !important;
+                align-items: center !important;
+                gap: 10px !important;
+            }
+            .onboarding-form-body h3.text-lg.font-semibold::before {
+                content: '' !important;
+                width: 4px !important;
+                height: 18px !important;
+                background: #108a00 !important;
+                border-radius: 2px !important;
+                flex-shrink: 0 !important;
+            }
+            /* First section header — no top margin */
+            .onboarding-form-body .p-6.overflow-y-auto > :first-child h3.text-lg.font-semibold,
+            .onboarding-form-body h3.text-lg.font-semibold:first-child {
+                margin-top: 0 !important;
+            }
+
+            /* ===== SUB-HEADINGS (h4) ===== */
+            .onboarding-form-body h4 {
+                font-family: 'Poppins', sans-serif !important;
+                font-size: 14px !important;
+                font-weight: 600 !important;
+                color: #374151 !important;
+                margin-bottom: 12px !important;
+            }
+
+            /* ===== INFO BOXES / NOTICES ===== */
+            .onboarding-form-body .p-4.border.border-gray-200.rounded-lg.bg-gray-50,
+            .onboarding-form-body .mb-6.p-4.border {
+                background: #f9fafb !important;
+                border: 1px solid #e5e7eb !important;
+                border-left: 3px solid #108a00 !important;
+                border-radius: 6px !important;
+                padding: 14px 18px !important;
+                margin-bottom: 20px !important;
+                font-size: 13px !important;
+                line-height: 1.6 !important;
+                color: #4b5563 !important;
+            }
+
+            /* ===== LABELS ===== */
+            .onboarding-form-body label.block.text-sm.font-medium,
+            .onboarding-form-body label {
+                font-family: 'Poppins', sans-serif !important;
+                font-size: 13px !important;
+                font-weight: 500 !important;
+                color: #374151 !important;
+                margin-bottom: 5px !important;
+                display: block !important;
+                line-height: 1.4 !important;
+            }
+
+            /* ===== TEXT INPUTS ===== */
+            .onboarding-form-body input[type="text"],
+            .onboarding-form-body input[type="date"],
+            .onboarding-form-body input[type="email"],
+            .onboarding-form-body input[type="tel"],
+            .onboarding-form-body input[type="number"],
+            .onboarding-form-body input[type="password"],
+            .onboarding-form-body select,
+            .onboarding-form-body textarea {
+                width: 100% !important;
+                height: 42px !important;
+                padding: 8px 14px !important;
+                border: 1px solid #d1d5db !important;
+                border-radius: 6px !important;
+                font-family: 'Poppins', sans-serif !important;
+                font-size: 14px !important;
+                color: #1f2937 !important;
+                background: #fff !important;
+                outline: none !important;
+                transition: border-color 0.15s, box-shadow 0.15s !important;
+                box-shadow: none !important;
+                box-sizing: border-box !important;
+            }
+            .onboarding-form-body textarea {
+                height: auto !important;
+                min-height: 80px !important;
+                resize: vertical !important;
+            }
+            .onboarding-form-body input[type="text"]:focus,
+            .onboarding-form-body input[type="date"]:focus,
+            .onboarding-form-body input[type="email"]:focus,
+            .onboarding-form-body input[type="tel"]:focus,
+            .onboarding-form-body input[type="number"]:focus,
+            .onboarding-form-body input[type="password"]:focus,
+            .onboarding-form-body select:focus,
+            .onboarding-form-body textarea:focus {
+                border-color: #108a00 !important;
+                box-shadow: 0 0 0 3px rgba(16,138,0,0.1) !important;
+            }
+            .onboarding-form-body input::placeholder,
+            .onboarding-form-body textarea::placeholder {
+                color: #9ca3af !important;
+                font-size: 13px !important;
+            }
+
+            /* ===== CHECKBOXES — aligned properly ===== */
+            .onboarding-form-body input[type="checkbox"] {
+                width: 16px !important;
+                height: 16px !important;
+                accent-color: #108a00 !important;
+                border-radius: 3px !important;
+                cursor: pointer !important;
+                margin: 0 !important;
+                flex-shrink: 0 !important;
+                vertical-align: middle !important;
+                position: relative !important;
+                top: -1px !important;
+            }
+            /* Checkbox + label row alignment */
+            .onboarding-form-body .flex.items-center input[type="checkbox"],
+            .onboarding-form-body .flex.items-start input[type="checkbox"] {
+                margin-right: 8px !important;
+            }
+            .onboarding-form-body .flex.items-center > label,
+            .onboarding-form-body .flex.items-start > label {
+                margin-bottom: 0 !important;
+                font-weight: 400 !important;
+            }
+
+            /* ===== SECTION NAV TABS ===== */
+            .onboarding-form-body .mb-6 > .flex.flex-wrap.gap-2 > button {
+                font-family: 'Poppins', sans-serif !important;
+                font-size: 13px !important;
+                font-weight: 500 !important;
+                padding: 8px 20px !important;
+                border-radius: 6px !important;
+                border: 1px solid #e5e7eb !important;
+                background: #f9fafb !important;
+                color: #4b5563 !important;
+                cursor: pointer !important;
+                transition: all 0.15s !important;
+            }
+            .onboarding-form-body .mb-6 > .flex.flex-wrap.gap-2 > button.bg-blue-600 {
+                background: #108a00 !important;
+                color: #fff !important;
+                border-color: #108a00 !important;
+                box-shadow: 0 1px 3px rgba(16,138,0,0.3) !important;
+            }
+            .onboarding-form-body .mb-6 > .flex.flex-wrap.gap-2 > button.bg-gray-200 {
+                background: #f9fafb !important;
+                color: #4b5563 !important;
+                border-color: #e5e7eb !important;
+            }
+            .onboarding-form-body .mb-6 > .flex.flex-wrap.gap-2 > button.bg-gray-200:hover {
+                background: #f0fdf4 !important;
+                border-color: #86efac !important;
+                color: #15803d !important;
+            }
+
+            /* ===== ACTION BUTTONS — uniform size, properly spaced ===== */
+            .onboarding-form-body button.bg-blue-600,
+            .onboarding-form-body button.bg-green-600 {
+                font-family: 'Poppins', sans-serif !important;
+                font-weight: 600 !important;
+                font-size: 14px !important;
+                padding: 10px 28px !important;
+                border-radius: 6px !important;
+                border: none !important;
+                cursor: pointer !important;
+                transition: all 0.15s !important;
+                min-width: 160px !important;
+                height: 44px !important;
+                display: inline-flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+                gap: 6px !important;
+            }
+            .onboarding-form-body button.bg-blue-600 {
+                background: #108a00 !important;
+                color: #fff !important;
+            }
+            .onboarding-form-body button.bg-blue-600:hover {
+                background: #0d7000 !important;
+            }
+            .onboarding-form-body button.bg-green-600 {
+                background: #28a745 !important;
+                color: #fff !important;
+            }
+            .onboarding-form-body button.bg-green-600:hover {
+                background: #1e8e3e !important;
+            }
+            .onboarding-form-body button.bg-blue-600:disabled,
+            .onboarding-form-body button.bg-green-600:disabled,
+            .onboarding-form-body button.bg-gray-400 {
+                background: #d1d5db !important;
+                color: #9ca3af !important;
+                cursor: not-allowed !important;
+                box-shadow: none !important;
+            }
+            /* Clear/Reset buttons (red) */
+            .onboarding-form-body button.bg-red-600 {
+                font-family: 'Poppins', sans-serif !important;
+                font-weight: 500 !important;
+                font-size: 13px !important;
+                padding: 8px 16px !important;
+                border-radius: 6px !important;
+                border: none !important;
+                background: #dc2626 !important;
+                color: #fff !important;
+                cursor: pointer !important;
+                transition: all 0.15s !important;
+            }
+            .onboarding-form-body button.bg-red-600:hover { background: #b91c1c !important; }
+            /* Button row spacing */
+            .onboarding-form-body .flex.gap-4.mt-6,
+            .onboarding-form-body .flex.gap-3.mt-6,
+            .onboarding-form-body .flex.justify-end.gap-4 {
+                gap: 12px !important;
+                margin-top: 28px !important;
+                padding-top: 20px !important;
+                border-top: 1px solid #e5e7eb !important;
+            }
+
+            /* ===== PDF PREVIEW SECTION ===== */
+            .onboarding-form-body iframe {
+                border-radius: 6px !important;
+                border: 1px solid #e5e7eb !important;
+                min-height: 500px !important;
+                width: 100% !important;
+            }
+            .onboarding-form-body .border.rounded-lg.overflow-hidden {
+                border-radius: 6px !important;
+                border: 1px solid #e5e7eb !important;
+            }
+
+            /* ===== SIGNATURE CANVAS AREA — proper bordered box ===== */
+            .onboarding-form-body .border.border-gray-300.rounded-md.overflow-hidden,
+            .onboarding-form-body .border-2.border-gray-300.rounded-md {
+                border: 2px solid #d1d5db !important;
+                border-radius: 8px !important;
+                background: #fff !important;
+                padding: 0 !important;
+                overflow: hidden !important;
+                position: relative !important;
+            }
+            .onboarding-form-body canvas {
+                display: block !important;
+                width: 100% !important;
+                background: #fff !important;
+                cursor: crosshair !important;
+                border: none !important;
+                border-radius: 0 !important;
+                touch-action: none !important;
+            }
+            /* Signature preview image */
+            .onboarding-form-body img[alt*="Signature"],
+            .onboarding-form-body img[alt*="signature"] {
+                max-height: 60px !important;
+                object-fit: contain !important;
+                border: 1px solid #e5e7eb !important;
+                border-radius: 4px !important;
+                padding: 6px !important;
+                background: #fff !important;
+            }
+
+            /* ===== GRID / SPACING ===== */
+            .onboarding-form-body .grid.grid-cols-2 { gap: 16px !important; }
+            .onboarding-form-body .grid.grid-cols-3 { gap: 16px !important; }
+            .onboarding-form-body .mb-8 { margin-bottom: 24px !important; }
+            .onboarding-form-body .mb-6 { margin-bottom: 20px !important; }
+            .onboarding-form-body .space-y-4 > * + * { margin-top: 16px !important; }
+            .onboarding-form-body .space-y-6 > * + * { margin-top: 20px !important; }
+
+            /* ===== SPINNER ===== */
+            .onboarding-form-body .animate-spin { animation: spin 1s linear infinite !important; }
+
+            /* ===== SMOOTH MODAL SCROLL ===== */
+            .onboarding-form-body {
+                scroll-behavior: smooth !important;
+                -webkit-overflow-scrolling: touch !important;
+            }
+            .onboarding-form-body::-webkit-scrollbar { width: 6px; }
+            .onboarding-form-body::-webkit-scrollbar-track { background: #f1f1f1; }
+            .onboarding-form-body::-webkit-scrollbar-thumb { background: #c1c1c1; border-radius: 6px; }
+            .onboarding-form-body::-webkit-scrollbar-thumb:hover { background: #999; }
+
+            /* ===== TAILWIND UTILITY CLASSES ===== */
+            .fixed { position: fixed; }
+            .inset-0 { top: 0; right: 0; bottom: 0; left: 0; }
+            .relative { position: relative; }
+            .absolute { position: absolute; }
+            .z-50 { z-index: 50; }
+            .flex { display: flex; }
+            .inline-flex { display: inline-flex; }
+            .grid { display: grid; }
+            .hidden { display: none; }
+            .block { display: block; }
+            .items-center { align-items: center; }
+            .items-start { align-items: flex-start; }
+            .items-end { align-items: flex-end; }
+            .justify-center { justify-content: center; }
+            .justify-between { justify-content: space-between; }
+            .justify-end { justify-content: flex-end; }
+            .flex-col { flex-direction: column; }
+            .flex-row { flex-direction: row; }
+            .flex-wrap { flex-wrap: wrap; }
+            .flex-1 { flex: 1 1 0%; }
+            .flex-shrink-0 { flex-shrink: 0; }
+            .gap-1 { gap: 0.25rem; }
+            .gap-2 { gap: 0.5rem; }
+            .gap-3 { gap: 0.75rem; }
+            .gap-4 { gap: 1rem; }
+            .gap-6 { gap: 1.5rem; }
+            .gap-8 { gap: 2rem; }
+            .w-full { width: 100%; }
+            .w-auto { width: auto; }
+            .w-4 { width: 1rem; }
+            .w-5 { width: 1.25rem; }
+            .w-6 { width: 1.5rem; }
+            .w-8 { width: 2rem; }
+            .w-10 { width: 2.5rem; }
+            .w-12 { width: 3rem; }
+            .w-16 { width: 4rem; }
+            .w-20 { width: 5rem; }
+            .w-24 { width: 6rem; }
+            .w-32 { width: 8rem; }
+            .h-4 { height: 1rem; }
+            .h-5 { height: 1.25rem; }
+            .h-6 { height: 1.5rem; }
+            .h-8 { height: 2rem; }
+            .h-10 { height: 2.5rem; }
+            .h-12 { height: 3rem; }
+            .h-16 { height: 4rem; }
+            .h-20 { height: 5rem; }
+            .h-32 { height: 8rem; }
+            .h-40 { height: 10rem; }
+            .h-48 { height: 12rem; }
+            .h-64 { height: 16rem; }
+            .h-96 { height: 24rem; }
+            .min-h-\\[200px\\] { min-height: 200px; }
+            .min-w-\\[160px\\] { min-width: 160px; }
+            .max-w-6xl { max-width: 72rem; }
+            .max-w-4xl { max-width: 56rem; }
+            .max-w-2xl { max-width: 42rem; }
+            .max-w-xl { max-width: 36rem; }
+            .max-w-md { max-width: 28rem; }
+            .max-w-sm { max-width: 24rem; }
+            .max-h-\\[95vh\\] { max-height: 95vh; }
+            .max-h-\\[85vh\\] { max-height: 85vh; }
+            .overflow-hidden { overflow: hidden; }
+            .overflow-y-auto { overflow-y: auto; }
+            .overflow-x-auto { overflow-x: auto; }
+            .p-1 { padding: 0.25rem; }
+            .p-2 { padding: 0.5rem; }
+            .p-3 { padding: 0.75rem; }
+            .p-4 { padding: 1rem; }
+            .p-5 { padding: 1.25rem; }
+            .p-6 { padding: 1.5rem; }
+            .p-8 { padding: 2rem; }
+            .px-1 { padding-left: 0.25rem; padding-right: 0.25rem; }
+            .px-2 { padding-left: 0.5rem; padding-right: 0.5rem; }
+            .px-3 { padding-left: 0.75rem; padding-right: 0.75rem; }
+            .px-4 { padding-left: 1rem; padding-right: 1rem; }
+            .px-5 { padding-left: 1.25rem; padding-right: 1.25rem; }
+            .px-6 { padding-left: 1.5rem; padding-right: 1.5rem; }
+            .px-8 { padding-left: 2rem; padding-right: 2rem; }
+            .py-1 { padding-top: 0.25rem; padding-bottom: 0.25rem; }
+            .py-1\\.5 { padding-top: 0.375rem; padding-bottom: 0.375rem; }
+            .py-2 { padding-top: 0.5rem; padding-bottom: 0.5rem; }
+            .py-3 { padding-top: 0.75rem; padding-bottom: 0.75rem; }
+            .py-4 { padding-top: 1rem; padding-bottom: 1rem; }
+            .m-0 { margin: 0; }
+            .m-auto { margin: auto; }
+            .mb-0 { margin-bottom: 0; }
+            .mb-1 { margin-bottom: 0.25rem; }
+            .mb-2 { margin-bottom: 0.5rem; }
+            .mb-3 { margin-bottom: 0.75rem; }
+            .mb-4 { margin-bottom: 1rem; }
+            .mb-5 { margin-bottom: 1.25rem; }
+            .mb-6 { margin-bottom: 1.5rem; }
+            .mb-8 { margin-bottom: 2rem; }
+            .mt-0 { margin-top: 0; }
+            .mt-1 { margin-top: 0.25rem; }
+            .mt-2 { margin-top: 0.5rem; }
+            .mt-3 { margin-top: 0.75rem; }
+            .mt-4 { margin-top: 1rem; }
+            .mt-6 { margin-top: 1.5rem; }
+            .mt-8 { margin-top: 2rem; }
+            .mr-1 { margin-right: 0.25rem; }
+            .mr-2 { margin-right: 0.5rem; }
+            .mr-3 { margin-right: 0.75rem; }
+            .ml-1 { margin-left: 0.25rem; }
+            .ml-2 { margin-left: 0.5rem; }
+            .ml-3 { margin-left: 0.75rem; }
+            .ml-auto { margin-left: auto; }
+            .space-y-1 > * + * { margin-top: 0.25rem; }
+            .space-y-2 > * + * { margin-top: 0.5rem; }
+            .space-y-3 > * + * { margin-top: 0.75rem; }
+            .space-y-4 > * + * { margin-top: 1rem; }
+            .space-y-6 > * + * { margin-top: 1.5rem; }
+            .space-x-1 > * + * { margin-left: 0.25rem; }
+            .space-x-2 > * + * { margin-left: 0.5rem; }
+            .space-x-3 > * + * { margin-left: 0.75rem; }
+            .space-x-4 > * + * { margin-left: 1rem; }
+            .text-xs { font-size: 0.75rem; line-height: 1rem; }
+            .text-sm { font-size: 0.875rem; line-height: 1.25rem; }
+            .text-base { font-size: 1rem; line-height: 1.5rem; }
+            .text-lg { font-size: 1.125rem; line-height: 1.75rem; }
+            .text-xl { font-size: 1.25rem; line-height: 1.75rem; }
+            .text-2xl { font-size: 1.5rem; line-height: 2rem; }
+            .text-3xl { font-size: 1.875rem; line-height: 2.25rem; }
+            .text-md { font-size: 1rem; }
+            .font-normal { font-weight: 400; }
+            .font-medium { font-weight: 500; }
+            .font-semibold { font-weight: 600; }
+            .font-bold { font-weight: 700; }
+            .text-center { text-align: center; }
+            .text-left { text-align: left; }
+            .text-right { text-align: right; }
+            .uppercase { text-transform: uppercase; }
+            .lowercase { text-transform: lowercase; }
+            .capitalize { text-transform: capitalize; }
+            .underline { text-decoration: underline; }
+            .no-underline { text-decoration: none; }
+            .leading-none { line-height: 1; }
+            .leading-tight { line-height: 1.25; }
+            .leading-normal { line-height: 1.5; }
+            .leading-relaxed { line-height: 1.625; }
+            .tracking-wide { letter-spacing: 0.025em; }
+            .text-white { color: #fff; }
+            .text-black { color: #000; }
+            .text-gray-300 { color: #d1d5db; }
+            .text-gray-400 { color: #9ca3af; }
+            .text-gray-500 { color: #6b7280; }
+            .text-gray-600 { color: #4b5563; }
+            .text-gray-700 { color: #374151; }
+            .text-gray-800 { color: #1f2937; }
+            .text-gray-900 { color: #111827; }
+            .text-red-500 { color: #ef4444; }
+            .text-red-600 { color: #dc2626; }
+            .text-red-700 { color: #b91c1c; }
+            .text-green-500 { color: #22c55e; }
+            .text-green-600 { color: #16a34a; }
+            .text-green-700 { color: #15803d; }
+            .text-blue-500 { color: #3b82f6; }
+            .text-blue-600 { color: #2563eb; }
+            .text-blue-700 { color: #1d4ed8; }
+            .text-yellow-600 { color: #ca8a04; }
+            .text-orange-600 { color: #ea580c; }
+            .bg-white { background-color: #fff; }
+            .bg-black { background-color: #000; }
+            .bg-transparent { background-color: transparent; }
+            .bg-gray-50 { background-color: #f9fafb; }
+            .bg-gray-100 { background-color: #f3f4f6; }
+            .bg-gray-200 { background-color: #e5e7eb; }
+            .bg-gray-300 { background-color: #d1d5db; }
+            .bg-gray-400 { background-color: #9ca3af; }
+            .bg-gray-500 { background-color: #6b7280; }
+            .bg-red-50 { background-color: #fef2f2; }
+            .bg-red-100 { background-color: #fee2e2; }
+            .bg-red-500 { background-color: #ef4444; }
+            .bg-red-600 { background-color: #dc2626; }
+            .bg-green-50 { background-color: #f0fdf4; }
+            .bg-green-100 { background-color: #dcfce7; }
+            .bg-green-500 { background-color: #22c55e; }
+            .bg-green-600 { background-color: #16a34a; }
+            .bg-green-700 { background-color: #15803d; }
+            .bg-blue-50 { background-color: #eff6ff; }
+            .bg-blue-100 { background-color: #dbeafe; }
+            .bg-blue-500 { background-color: #3b82f6; }
+            .bg-blue-600 { background-color: #2563eb; }
+            .bg-blue-700 { background-color: #1d4ed8; }
+            .bg-yellow-50 { background-color: #fefce8; }
+            .bg-yellow-100 { background-color: #fef3c7; }
+            .bg-orange-50 { background-color: #fff7ed; }
+            .bg-opacity-50 { background-color: rgba(0,0,0,0.5); }
+            .border { border-width: 1px; border-style: solid; border-color: #e5e7eb; }
+            .border-0 { border: none; }
+            .border-2 { border-width: 2px; border-style: solid; }
+            .border-b { border-bottom-width: 1px; border-bottom-style: solid; border-bottom-color: #e5e7eb; }
+            .border-t { border-top-width: 1px; border-top-style: solid; border-top-color: #e5e7eb; }
+            .border-l { border-left-width: 1px; border-left-style: solid; border-left-color: #e5e7eb; }
+            .border-r { border-right-width: 1px; border-right-style: solid; border-right-color: #e5e7eb; }
+            .border-l-4 { border-left-width: 4px; border-left-style: solid; }
+            .border-gray-100 { border-color: #f3f4f6; }
+            .border-gray-200 { border-color: #e5e7eb; }
+            .border-gray-300 { border-color: #d1d5db; }
+            .border-gray-400 { border-color: #9ca3af; }
+            .border-red-200 { border-color: #fecaca; }
+            .border-red-300 { border-color: #fca5a5; }
+            .border-red-400 { border-color: #f87171; }
+            .border-green-200 { border-color: #bbf7d0; }
+            .border-green-300 { border-color: #86efac; }
+            .border-green-400 { border-color: #4ade80; }
+            .border-blue-200 { border-color: #bfdbfe; }
+            .border-blue-400 { border-color: #60a5fa; }
+            .border-yellow-200 { border-color: #fde68a; }
+            .border-yellow-400 { border-color: #facc15; }
+            .rounded { border-radius: 0.25rem; }
+            .rounded-sm { border-radius: 0.125rem; }
+            .rounded-md { border-radius: 0.375rem; }
+            .rounded-lg { border-radius: 0.5rem; }
+            .rounded-xl { border-radius: 0.75rem; }
+            .rounded-2xl { border-radius: 1rem; }
+            .rounded-full { border-radius: 9999px; }
+            .shadow-sm { box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+            .shadow { box-shadow: 0 1px 3px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06); }
+            .shadow-md { box-shadow: 0 4px 6px rgba(0,0,0,0.07), 0 2px 4px rgba(0,0,0,0.06); }
+            .shadow-lg { box-shadow: 0 10px 15px rgba(0,0,0,0.1), 0 4px 6px rgba(0,0,0,0.05); }
+            .shadow-xl { box-shadow: 0 20px 25px rgba(0,0,0,0.1), 0 10px 10px rgba(0,0,0,0.04); }
+            .shadow-none { box-shadow: none; }
+            .transition { transition: all 0.15s ease; }
+            .transition-colors { transition: color 0.15s, background-color 0.15s, border-color 0.15s; }
+            .transition-all { transition: all 0.2s ease; }
+            .transition-opacity { transition: opacity 0.15s ease; }
+            .duration-200 { transition-duration: 200ms; }
+            .duration-300 { transition-duration: 300ms; }
+            .ease-in-out { transition-timing-function: ease-in-out; }
+            .cursor-pointer { cursor: pointer; }
+            .cursor-not-allowed { cursor: not-allowed; }
+            .cursor-default { cursor: default; }
+            .select-none { user-select: none; }
+            .whitespace-nowrap { white-space: nowrap; }
+            .whitespace-pre-wrap { white-space: pre-wrap; }
+            .break-words { word-wrap: break-word; overflow-wrap: break-word; }
+            .truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+            .opacity-0 { opacity: 0; }
+            .opacity-25 { opacity: 0.25; }
+            .opacity-50 { opacity: 0.5; }
+            .opacity-75 { opacity: 0.75; }
+            .opacity-100 { opacity: 1; }
+            .pointer-events-none { pointer-events: none; }
+            .resize-none { resize: none; }
+            .list-none { list-style: none; }
+            .list-disc { list-style-type: disc; }
+
+            /* Hover states */
+            .hover\\:bg-gray-50:hover { background-color: #f9fafb; }
+            .hover\\:bg-gray-100:hover { background-color: #f3f4f6; }
+            .hover\\:bg-gray-200:hover { background-color: #e5e7eb; }
+            .hover\\:bg-gray-300:hover { background-color: #d1d5db; }
+            .hover\\:bg-blue-700:hover { background-color: #1d4ed8; }
+            .hover\\:bg-green-700:hover { background-color: #15803d; }
+            .hover\\:bg-red-700:hover { background-color: #b91c1c; }
+            .hover\\:text-gray-600:hover { color: #4b5563; }
+            .hover\\:text-gray-700:hover { color: #374151; }
+            .hover\\:text-gray-900:hover { color: #111827; }
+            .hover\\:text-red-600:hover { color: #dc2626; }
+            .hover\\:shadow-md:hover { box-shadow: 0 4px 6px rgba(0,0,0,0.07); }
+
+            /* Disabled states */
+            .disabled\\:bg-gray-400:disabled { background-color: #9ca3af; }
+            .disabled\\:bg-gray-300:disabled { background-color: #d1d5db; }
+            .disabled\\:cursor-not-allowed:disabled { cursor: not-allowed; }
+            .disabled\\:opacity-50:disabled { opacity: 0.5; }
+            .disabled\\:text-gray-200:disabled { color: #e5e7eb; }
+
+            /* Focus states — green theme */
+            .focus\\:outline-none:focus { outline: none; }
+            .focus\\:ring-2:focus { box-shadow: 0 0 0 3px rgba(16,138,0,0.2); }
+            .focus\\:ring-blue-500:focus { box-shadow: 0 0 0 3px rgba(16,138,0,0.2); }
+            .focus\\:border-blue-500:focus { border-color: #28a745; }
+
+            /* Animation */
+            .animate-spin { animation: spin 1s linear infinite; }
+            .animate-pulse { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+            @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+            .border-t-transparent { border-top-color: transparent; }
+
+            /* Grid */
+            .grid-cols-1 { grid-template-columns: repeat(1, minmax(0, 1fr)); }
+            .grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+            .grid-cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+            .grid-cols-5 { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+            .grid-cols-6 { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+            .col-span-1 { grid-column: span 1 / span 1; }
+            .col-span-2 { grid-column: span 2 / span 2; }
+            .col-span-3 { grid-column: span 3 / span 3; }
+            .col-span-full { grid-column: 1 / -1; }
+            .row-span-2 { grid-row: span 2 / span 2; }
+
+            /* Responsive */
+            @media (min-width: 640px) {
+                .sm\\:grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+                .sm\\:grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+                .sm\\:flex-row { flex-direction: row; }
+                .sm\\:text-sm { font-size: 0.875rem; }
+            }
+            @media (min-width: 768px) {
+                .md\\:grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+                .md\\:grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+                .md\\:grid-cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+                .md\\:col-span-2 { grid-column: span 2 / span 2; }
+                .md\\:col-span-3 { grid-column: span 3 / span 3; }
+                .md\\:flex-row { flex-direction: row; }
+                .md\\:w-auto { width: auto; }
+            }
+            @media (min-width: 1024px) {
+                .lg\\:grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+                .lg\\:grid-cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+                .lg\\:grid-cols-5 { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+                .lg\\:flex-row { flex-direction: row; }
+            }
+        `;
+        document.head.appendChild(style);
+    }, []);
 
     return (
         <div className="container my-4">
             <div className="row">
                 <div className="col-lg-12 col-md-12 col-sm-12 p-4">
-                    <div className="row rounded">
-                        <div className="card p-3 mb-4">
-                            <form className="row g-3 py-3">
-                                <div className="col-md-6">
-                                    <label htmlFor="memberName" className="w-50 pb-2">
-                                        Search File
-                                    </label>
-                                    <input
-                                        type="text"
-                                        className="form-control"
-                                        value={search}
-                                        onChange={handleSearch}
-                                    />
+                    {/* Onboarding Forms Section */}
+                    <div
+                        style={{
+                            marginTop: "40px",
+                            background: "linear-gradient(135deg, #f0fdf4 0%, #f0f9ff 100%)",
+                            borderRadius: "16px",
+                            padding: "28px",
+                            border: "1px solid #e0f2e9",
+                        }}
+                    >
+                        <div className="d-flex justify-content-between align-items-center" style={{ marginBottom: "20px" }}>
+                            <div className="d-flex align-items-center" style={{ gap: "12px" }}>
+                                <div
+                                    style={{
+                                        width: "44px",
+                                        height: "44px",
+                                        borderRadius: "12px",
+                                        background: "linear-gradient(135deg, #108a00, #28a745)",
+                                        display: "flex",
+                                        alignItems: "center",
+                                        justifyContent: "center",
+                                        boxShadow: "0 4px 12px rgba(16,138,0,0.25)",
+                                    }}
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="white" viewBox="0 0 384 512">
+                                        <path d="M64 0C28.7 0 0 28.7 0 64V448c0 35.3 28.7 64 64 64H320c35.3 0 64-28.7 64-64V160H256c-17.7 0-32-14.3-32-32V0H64zM256 0V128H384L256 0zM112 256H272c8.8 0 16 7.2 16 16s-7.2 16-16 16H112c-8.8 0-16-7.2-16-16s7.2-16 16-16zm0 64H272c8.8 0 16 7.2 16 16s-7.2 16-16 16H112c-8.8 0-16-7.2-16-16s7.2-16 16-16zm0 64H272c8.8 0 16 7.2 16 16s-7.2 16-16 16H112c-8.8 0-16-7.2-16-16s7.2-16 16-16z" />
+                                    </svg>
                                 </div>
-                                <div className="col-md-2">
-                                    <label htmlFor="memberName" className="w-50 pb-2">
-                                        Date
-                                    </label>
-                                    <input
-                                        type="date"
-                                        className="form-control"
-                                        value={date}
-                                        onChange={handleDateChange}
-                                    />
+                                <div>
+                                    <h5 style={{ fontWeight: 700, margin: 0, color: "#1a1a1a", fontSize: "18px" }}>Onboarding Forms</h5>
+                                    <p style={{ margin: 0, color: "#6b7280", fontSize: "13px" }}>Complete required forms for employee onboarding</p>
                                 </div>
-                                <div className="col-md-2 text-center d-flex justify-content-end align-items-end ">
-                                    <button
-                                        type="button"
-                                        className="btn btn-success mx-2"
-                                        onClick={() => {
-                                            searchFiles();
-                                        }}
-                                    >
-                                        Submit
-                                    </button>
-                                    <button
-                                        type="reset"
-                                        className="btn btn-light   mx-2"
-                                        onClick={handleReset}
-                                    >
-                                        Clear
-                                    </button>
-                                </div>
-                            </form>
-                        </div>
-                        <div className="d-flex justify-content-between align-items-center mb-3 mt-4">
-                            <button
-                                className="btn btn-success"
-                                onClick={() => setShowModal(true)}
+                            </div>
+                            <span
+                                style={{
+                                    background: "#e8f5e9",
+                                    color: "#108a00",
+                                    padding: "6px 14px",
+                                    borderRadius: "20px",
+                                    fontSize: "13px",
+                                    fontWeight: 600,
+                                }}
                             >
-                                Upload Document
-                            </button>
+                                {onboardingForms.length} Forms
+                            </span>
                         </div>
-                        <table className="custom-table w-full divide-y divide-gray-200 timetracker">
+                        <table
+                            className="custom-table timetracker"
+                            style={{
+                                borderRadius: "12px",
+                                overflow: "hidden",
+                                border: "1px solid #e5e7eb",
+                                boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
+                            }}
+                        >
                             <thead>
-                                <tr>
-                                    <th>Document No.</th>
-                                    <th>Document Name</th>
-                                    <th>File Size</th>
-                                    <th>Date</th>
-                                    <th className="text-center">Action</th>
+                                <tr style={{ background: "linear-gradient(135deg, #108a00, #1a9e0f)", }}>
+                                    <th style={{ color: "#fff", fontWeight: 600, fontSize: "13px", padding: "14px 20px", letterSpacing: "0.3px" }}>Sr. No</th>
+                                    <th style={{ color: "#fff", fontWeight: 600, fontSize: "13px", padding: "14px 20px", letterSpacing: "0.3px" }}>Code</th>
+                                    <th style={{ color: "#fff", fontWeight: 600, fontSize: "13px", padding: "14px 20px", letterSpacing: "0.3px" }}>Form Name</th>
+                                    <th style={{ color: "#fff", fontWeight: 600, fontSize: "13px", padding: "14px 20px", letterSpacing: "0.3px" }}>Category</th>
+                                    <th style={{ color: "#fff", fontWeight: 600, fontSize: "13px", padding: "14px 20px", letterSpacing: "0.3px", textAlign: "center" }}>Action</th>
                                 </tr>
                             </thead>
-                            <tbody className="text-center">
-                                {documents?.length ? (
-                                    documents?.map((file, index) => (
-                                        <tr key={index}>
-                                            <td>{file.docIdentity}</td>
-                                            <td>
-                                                <div
-                                                    className="d-flex align-items-center"
-                                                    style={{ gap: "3px" }}
-                                                >
-                                                    <svg
-                                                        xmlns="http://www.w3.org/2000/svg"
-                                                        viewBox="0 0 384 512"
-                                                        width="16px"
-                                                        height="16px"
-                                                    >
-                                                        <path d="M64 0C28.7 0 0 28.7 0 64L0 448c0 35.3 28.7 64 64 64l256 0c35.3 0 64-28.7 64-64l0-288-128 0c-17.7 0-32-14.3-32-32L224 0 64 0zM256 0l0 128 128 0L256 0zM112 256l160 0c8.8 0 16 7.2 16 16s-7.2 16-16 16l-160 0c-8.8 0-16-7.2-16-16s7.2-16 16-16zm0 64l160 0c8.8 0 16 7.2 16 16s-7.2 16-16 16l-160 0c-8.8 0-16-7.2-16-16s7.2-16 16-16zm0 64l160 0c8.8 0 16 7.2 16 16s-7.2 16-16 16l-160 0c-8.8 0-16-7.2-16-16s7.2-16 16-16z" />
-                                                    </svg>
-                                                    <p className="mb-0">{file.fileName}</p>
-                                                </div>
-                                            </td>
-                                            <td>
-                                                <div
-                                                    className="d-flex align-items-center"
-                                                    style={{ gap: "3px" }}
-                                                >
-                                                    <svg
-                                                        xmlns="http://www.w3.org/2000/svg"
-                                                        width="16px"
-                                                        height="16px"
-                                                        viewBox="0 0 384 512"
-                                                    >
-                                                        <path d="M0 64C0 28.7 28.7 0 64 0L224 0l0 128c0 17.7 14.3 32 32 32l128 0 0 288c0 35.3-28.7 64-64 64L64 512c-35.3 0-64-28.7-64-64L0 64zm384 64l-128 0L256 0 384 128z" />
-                                                    </svg>
-                                                    <p className="mb-0 ml-1">
-                                                        {formatFileSize(file.fileSize)}
-                                                    </p>
-                                                </div>
-                                            </td>
-                                            <td>
-                                                <div
-                                                    className="d-flex align-items-center"
-                                                    style={{ gap: "3px" }}
-                                                >
-                                                    <svg
-                                                        xmlns="http://www.w3.org/2000/svg"
-                                                        width="16px"
-                                                        height="16px"
-                                                        viewBox="0 0 448 512"
-                                                    >
-                                                        <path d="M96 32l0 32L48 64C21.5 64 0 85.5 0 112l0 48 448 0 0-48c0-26.5-21.5-48-48-48l-48 0 0-32c0-17.7-14.3-32-32-32s-32 14.3-32 32l0 32L160 64l0-32c0-17.7-14.3-32-32-32S96 14.3 96 32zM448 192L0 192 0 464c0 26.5 21.5 48 48 48l352 0c26.5 0 48-21.5 48-48l0-272z" />
-                                                    </svg>
-                                                    <p className="mb-0 ml-1">{formatDate(file.date)}</p>
-                                                </div>
-                                            </td>
-                                            <td
-                                                className="d-flex justify-content-around document-action"
-                                                style={{ "border-bottom": "none" }}
+                            <tbody>
+                                {onboardingForms.map((form, idx) => (
+                                    <tr
+                                        key={form.id}
+                                        style={{
+                                            background: idx % 2 === 0 ? "#fff" : "#f9fafb",
+                                            transition: "background-color 0.15s",
+                                            height: "56px",
+                                        }}
+                                        onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#f0fdf4")}
+                                        onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = idx % 2 === 0 ? "#fff" : "#f9fafb")}
+                                    >
+                                        <td style={{ padding: "12px 20px", color: "#9ca3af", fontSize: "13px", fontWeight: 500 }}>{idx + 1}</td>
+                                        <td style={{ padding: "12px 20px" }}>
+                                            <span style={{
+                                                background: "#f3f4f6",
+                                                padding: "4px 10px",
+                                                borderRadius: "6px",
+                                                fontSize: "13px",
+                                                fontWeight: 600,
+                                                color: "#374151",
+                                                fontFamily: "'Courier New', monospace",
+                                            }}>{form.code}</span>
+                                        </td>
+                                        <td style={{ padding: "12px 20px", textAlign: "left", fontWeight: 500, color: "#1f2937", fontSize: "14px" }}>{form.name}</td>
+                                        <td style={{ padding: "12px 20px" }}>
+                                            <span
+                                                style={{
+                                                    fontSize: "12px",
+                                                    padding: "5px 14px",
+                                                    borderRadius: "20px",
+                                                    fontWeight: 600,
+                                                    letterSpacing: "0.3px",
+                                                    ...(form.type === "Pre-Hire"
+                                                        ? { background: "#e0f2fe", color: "#0369a1" }
+                                                        : { background: "#dcfce7", color: "#15803d" }),
+                                                }}
                                             >
-                                                <svg
-                                                    xmlns="http://www.w3.org/2000/svg"
-                                                    width="20px"
-                                                    height="20px"
-                                                    viewBox="0 0 576 512"
-                                                    fill="blue"
-                                                    onClick={() => handleView(file.fileUrl)}
-                                                >
+                                                {form.type}
+                                            </span>
+                                        </td>
+                                        <td style={{ padding: "12px 20px", textAlign: "center" }}>
+                                            <button
+                                                onClick={() => setSelectedFormId(form.id)}
+                                                style={{
+                                                    background: "linear-gradient(135deg, #108a00, #28a745)",
+                                                    color: "#fff",
+                                                    border: "none",
+                                                    padding: "7px 20px",
+                                                    borderRadius: "8px",
+                                                    fontSize: "13px",
+                                                    fontWeight: 600,
+                                                    cursor: "pointer",
+                                                    transition: "all 0.2s",
+                                                    boxShadow: "0 2px 6px rgba(16,138,0,0.2)",
+                                                }}
+                                                onMouseEnter={(e) => {
+                                                    e.target.style.transform = "translateY(-1px)";
+                                                    e.target.style.boxShadow = "0 4px 12px rgba(16,138,0,0.3)";
+                                                }}
+                                                onMouseLeave={(e) => {
+                                                    e.target.style.transform = "translateY(0)";
+                                                    e.target.style.boxShadow = "0 2px 6px rgba(16,138,0,0.2)";
+                                                }}
+                                            >
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="white" viewBox="0 0 576 512" style={{ marginRight: "6px", verticalAlign: "-1px" }}>
                                                     <path d="M288 80c-65.2 0-118.8 29.6-159.9 67.7C89.6 183.5 63 226 49.4 256c13.6 30 40.2 72.5 78.6 108.3C169.2 402.4 222.8 432 288 432s118.8-29.6 159.9-67.7C486.4 328.5 513 286 526.6 256c-13.6-30-40.2-72.5-78.6-108.3C406.8 109.6 353.2 80 288 80zM95.4 112.6C142.5 68.8 207.2 32 288 32s145.5 36.8 192.6 80.6c46.8 43.5 78.1 95.4 93 131.1c3.3 7.9 3.3 16.7 0 24.6c-14.9 35.7-46.2 87.7-93 131.1C433.5 443.2 368.8 480 288 480s-145.5-36.8-192.6-80.6C48.6 356 17.3 304 2.5 268.3c-3.3-7.9-3.3-16.7 0-24.6C17.3 208 48.6 156 95.4 112.6zM288 336c44.2 0 80-35.8 80-80s-35.8-80-80-80c-.7 0-1.3 0-2 0c1.3 5.1 2 10.5 2 16c0 35.3-28.7 64-64 64c-5.5 0-10.9-.7-16-2c0 .7 0 1.3 0 2c0 44.2 35.8 80 80 80zm0-208a128 128 0 1 1 0 256 128 128 0 1 1 0-256z" />
                                                 </svg>
-                                                <svg
-                                                    xmlns="http://www.w3.org/2000/svg"
-                                                    width="20px"
-                                                    height="20px"
-                                                    viewBox="0 0 448 512"
-                                                    fill="#008000"
-                                                    onClick={() => handleDelete(file._id)}
-                                                >
-                                                    <path d="M135.2 17.7L128 32 32 32C14.3 32 0 46.3 0 64S14.3 96 32 96l384 0c17.7 0 32-14.3 32-32s-14.3-32-32-32l-96 0-7.2-14.3C307.4 6.8 296.3 0 284.2 0L163.8 0c-12.1 0-23.2 6.8-28.6 17.7zM416 128L32 128 53.2 467c1.6 25.3 22.6 45 47.9 45l245.8 0c25.3 0 46.3-19.7 47.9-45L416 128z" />
-                                                </svg>
-                                            </td>
-                                        </tr>
-                                    ))
-                                ) : (
-                                    <tr>
-                                        <td className="px-4 py-2 text-center" colSpan="4">
-                                            <p>No Record Found.</p>
+                                                Open Form
+                                            </button>
                                         </td>
                                     </tr>
-                                )}
+                                ))}
                             </tbody>
                         </table>
                     </div>
-                </div>
-                <Modal
-                    show={showModal}
-                    onHide={() => setShowModal(false)}
-                    centered
-                    className="custom-modal custom-view-modal"
-                >
-                    <Modal.Header closeButton>
-                        <Modal.Title>Upload Document</Modal.Title>
-                    </Modal.Header>
-                    <Modal.Body>
-                        <div className="mb-3">
-                            <label className="form-label">Document ID</label>
-                            <div className="input-group">
-                                <span className="input-group-text">Title</span>
-                                <input
-                                    type="text"
-                                    className="form-control"
-                                    placeholder="Enter document ID"
-                                    value={documentId}
-                                    onChange={(e) => setDocumentId(e.target.value)}
-                                />
-                            </div>
-                        </div>
-                        <p className="text-muted f15">
-                            Supported file format (.docx , .pdf only )
-                        </p>
-                        <div className="upload-section text-center p-4 rounded">
-                            <div className="mb-3">
-                                <i className="fas fa-file-upload fa-3x text-success"></i>
-                            </div>
 
-                            {selectedFile ? (
-                                <div className="file-info text-center">
-                                    <p>{selectedFile.name}</p>
+                </div>
+
+                {/* Onboarding Form Modal Overlay */}
+                {(() => {
+                    const FormComponent = selectedFormId ? getPdfForm(selectedFormId) : null;
+                    const selectedForm = onboardingForms.find((f) => f.id === selectedFormId);
+                    if (!FormComponent) return null;
+                    return (
+                        <div
+                            onClick={() => setSelectedFormId(null)}
+                            style={{
+                                position: "fixed",
+                                top: 0,
+                                left: 0,
+                                right: 0,
+                                bottom: 0,
+                                backgroundColor: "rgba(0, 0, 0, 0.6)",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                zIndex: 99999,
+                                animation: "fadeIn 0.2s ease-in-out",
+                                padding: "20px",
+                                fontFamily: "'Poppins', sans-serif",
+                            }}
+                        >
+                            <div
+                                onClick={(e) => e.stopPropagation()}
+                                style={{
+                                    backgroundColor: "#fff",
+                                    borderRadius: "20px",
+                                    boxShadow: "0 25px 60px rgba(0,0,0,0.3)",
+                                    width: "100%",
+                                    maxWidth: "1100px",
+                                    maxHeight: "95vh",
+                                    display: "flex",
+                                    flexDirection: "column",
+                                    overflow: "hidden",
+                                    animation: "modalSlideIn 0.3s ease-out",
+                                }}
+                            >
+                                {/* Modal Header */}
+                                <div
+                                    style={{
+                                        background: "linear-gradient(135deg, #108a00 0%, #1a9e0f 50%, #28a745 100%)",
+                                        padding: "20px 28px",
+                                        display: "flex",
+                                        alignItems: "center",
+                                        justifyContent: "space-between",
+                                        flexShrink: 0,
+                                    }}
+                                >
+                                    <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
+                                        <div
+                                            style={{
+                                                width: "40px",
+                                                height: "40px",
+                                                borderRadius: "10px",
+                                                background: "rgba(255,255,255,0.2)",
+                                                display: "flex",
+                                                alignItems: "center",
+                                                justifyContent: "center",
+                                            }}
+                                        >
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="white" viewBox="0 0 384 512">
+                                                <path d="M64 0C28.7 0 0 28.7 0 64V448c0 35.3 28.7 64 64 64H320c35.3 0 64-28.7 64-64V160H256c-17.7 0-32-14.3-32-32V0H64zM256 0V128H384L256 0zM112 256H272c8.8 0 16 7.2 16 16s-7.2 16-16 16H112c-8.8 0-16-7.2-16-16s7.2-16 16-16zm0 64H272c8.8 0 16 7.2 16 16s-7.2 16-16 16H112c-8.8 0-16-7.2-16-16s7.2-16 16-16zm0 64H272c8.8 0 16 7.2 16 16s-7.2 16-16 16H112c-8.8 0-16-7.2-16-16s7.2-16 16-16z" />
+                                            </svg>
+                                        </div>
+                                        <div>
+                                            <h5 style={{ margin: 0, color: "#fff", fontWeight: 700, fontSize: "17px" }}>
+                                                {selectedForm ? selectedForm.name : "Onboarding Form"}
+                                            </h5>
+                                            {selectedForm && (
+                                                <span style={{ color: "rgba(255,255,255,0.8)", fontSize: "12px" }}>
+                                                    Code: {selectedForm.code} &bull; {selectedForm.type}
+                                                </span>
+                                            )}
+                                        </div>
+                                    </div>
                                     <button
-                                        onClick={handleRemoveFile}
-                                        className="btn btn-danger btn-sm"
+                                        onClick={() => setSelectedFormId(null)}
+                                        style={{
+                                            width: "36px",
+                                            height: "36px",
+                                            borderRadius: "10px",
+                                            background: "rgba(255,255,255,0.15)",
+                                            border: "1px solid rgba(255,255,255,0.25)",
+                                            color: "#fff",
+                                            fontSize: "18px",
+                                            cursor: "pointer",
+                                            display: "flex",
+                                            alignItems: "center",
+                                            justifyContent: "center",
+                                            transition: "all 0.2s",
+                                            lineHeight: 1,
+                                        }}
+                                        onMouseEnter={(e) => (e.target.style.background = "rgba(255,255,255,0.3)")}
+                                        onMouseLeave={(e) => (e.target.style.background = "rgba(255,255,255,0.15)")}
                                     >
-                                        &times; Remove File
+                                        ✕
                                     </button>
                                 </div>
-                            ) : (
-                                <>
-                                    <input
-                                        type="file"
-                                        onChange={handleFileSelect}
-                                        className="form-control"
-                                        style={{ display: "none" }}
-                                        id="fileInput"
-                                        accept=".docx, .pdf"
+                                {/* Modal Body */}
+                                <div
+                                    className="onboarding-form-body"
+                                    style={{
+                                        flex: 1,
+                                        overflowY: "auto",
+                                        padding: "0",
+                                        background: "#fff",
+                                        fontFamily: "'Poppins', sans-serif",
+                                    }}
+                                >
+                                    <FormComponent
+                                        document={{ url: selectedForm?.template || "" }}
+                                        token={localStorage.getItem("shinpay-vendor-token") || ""}
+                                        onClose={() => setSelectedFormId(null)}
+                                        onSuccess={() => setSelectedFormId(null)}
                                     />
-                                    <svg
-                                        xmlns="http://www.w3.org/2000/svg"
-                                        width="40px"
-                                        height="40px"
-                                        fill="green"
-                                        viewBox="0 0 576 512"
-                                    >
-                                        <path d="M160 32c-35.3 0-64 28.7-64 64l0 224c0 35.3 28.7 64 64 64l352 0c35.3 0 64-28.7 64-64l0-224c0-35.3-28.7-64-64-64L160 32zM396 138.7l96 144c4.9 7.4 5.4 16.8 1.2 24.6S480.9 320 472 320l-144 0-48 0-80 0c-9.2 0-17.6-5.3-21.6-13.6s-2.9-18.2 2.9-25.4l64-80c4.6-5.7 11.4-9 18.7-9s14.2 3.3 18.7 9l17.3 21.6 56-84C360.5 132 368 128 376 128s15.5 4 20 10.7zM192 128a32 32 0 1 1 64 0 32 32 0 1 1 -64 0zM48 120c0-13.3-10.7-24-24-24S0 106.7 0 120L0 344c0 75.1 60.9 136 136 136l320 0c13.3 0 24-10.7 24-24s-10.7-24-24-24l-320 0c-48.6 0-88-39.4-88-88l0-224z" />
-                                    </svg>
-                                    <p className="mt-2">Drag and Drop File here or</p>
-                                    <label htmlFor="fileInput" className="btn btn-outline-success">
-                                        Browse File
-                                    </label>
-                                </>
-                            )}
+                                </div>
+                            </div>
                         </div>
-                    </Modal.Body>
-                    <Modal.Footer className="d-flex justify-content-between">
-                        <p
-                            type="button"
-                            className="btn btn-outline-success"
-                            onClick={() => setShowModal(false)}
-                            disabled={loading}
-                        >
-                            <i className="fas fa-times"></i> Cancel
-                        </p>
-                        <Button
-                            disabled={loading}
-                            type="button"
-                            className="btn btn-success"
-                            onClick={handleFileUpload}
-                        >
-                            <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                viewBox="0 0 512 512"
-                                width="16px"
-                                height="16px"
-                                fill="white"
-                            >
-                                <path d="M288 109.3L288 352c0 17.7-14.3 32-32 32s-32-14.3-32-32l0-242.7-73.4 73.4c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3l128-128c12.5-12.5 32.8-12.5 45.3 0l128 128c12.5 12.5 12.5 32.8 0 45.3s-32.8 12.5-45.3 0L288 109.3zM64 352l128 0c0 35.3 28.7 64 64 64s64-28.7 64-64l128 0c35.3 0 64 28.7 64 64l0 32c0 35.3-28.7 64-64 64L64 512c-35.3 0-64-28.7-64-64l0-32c0-35.3 28.7-64 64-64zM432 456a24 24 0 1 0 0-48 24 24 0 1 0 0 48z" />
-                            </svg>{" "}
-                            {loading ? 'Uploading...' : 'Upload'}
-                        </Button>
-                    </Modal.Footer>
-                </Modal>
+                    );
+                })()}
             </div>
         </div>
     );

@@ -6,12 +6,17 @@ const BaseUrl = process.env.REACT_APP_BASH_URL;
 // Async actions
 export const fetchDocuments = createAsyncThunk('documents/fetchDocuments', async (params, { rejectWithValue }) => {
   try {
-    const { search, date } = params;
+    const { search, date, includeSystemForms } = params;
     const options = {
       Authorization: `Bearer ${localStorage.getItem("shinpay-vendor-token")}`,
       "Content-Type": "application/json",
     };
-    const response = await axios.get(`${BaseUrl}/vendor/documents?search=${search ?? ''}&date=${date ?? ''}`, { headers: options });
+    const queryParams = new URLSearchParams({
+      search: search ?? '',
+      date: date ?? '',
+      includeSystemForms: includeSystemForms ?? 'false'
+    });
+    const response = await axios.get(`${BaseUrl}/vendor/documents?${queryParams.toString()}`, { headers: options });
 
     return response.data;
   } catch (error) {
@@ -46,6 +51,19 @@ export const deleteDocument = createAsyncThunk('documents/deleteDocument', async
     return id;
   } catch (error) {
     return rejectWithValue(error.response.data);
+  }
+});
+
+export const seedOnboardingForms = createAsyncThunk('documents/seedOnboardingForms', async (_, { rejectWithValue }) => {
+  try {
+    const options = {
+      Authorization: `Bearer ${localStorage.getItem("shinpay-vendor-token")}`,
+      "Content-Type": "application/json",
+    };
+    const response = await axios.post(`${BaseUrl}/vendor/seed-onboarding-forms`, {}, { headers: options });
+    return response.data;
+  } catch (error) {
+    return rejectWithValue(error.response?.data || { message: 'Failed to seed forms' });
   }
 });
 

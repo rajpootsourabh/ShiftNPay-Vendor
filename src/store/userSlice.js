@@ -72,7 +72,7 @@ export const fetchAllowedCategories = createAsyncThunk(
 
             const response = await axios
                 .get(`${bashUrl}/vendor/my-modules`, options);
-            return response.data.data;
+            return response.data;
         } catch (err) {
             return rejectWithValue(err.response.data);
         }
@@ -126,7 +126,7 @@ const userSlice = createSlice({
             })
             .addCase(fetchAllowedCategories.fulfilled, (state, action) => {
                 state.loading = false;
-                state.allowedCategories = action?.payload?.category;
+                state.allowedCategories = action?.payload?.modules;
             })
             .addCase(fetchAllowedCategories.rejected, (state, action) => {
                 state.loading = false;

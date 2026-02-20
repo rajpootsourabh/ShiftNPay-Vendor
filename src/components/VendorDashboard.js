@@ -33,12 +33,14 @@ import {
 import { fetchEmployeesByVendor } from "../store/Tracker/trackerSlice";
 import { useDropzone } from "react-dropzone";
 import DocumentList from "./DocumentList";
-import AssignedDocument from "./AssignDocument";
+import AssignedDocument, { ReceiveDocumentSection } from "./AssignDocument";
 import { fetchAssignedDocuments } from "../store/AssignedDocument/assignedDocumentSlice";
+import { getUserName } from "../Helper/functions";
 
 const ChecklistApp = ({user}) => {
     const [activeTab, setActiveTab] = useState("1");
     const dispatch = useDispatch();
+    const { assignedDocuments } = useSelector((state) => state.assignedDocuments);
     const toggleTab = (tab) => {
         if (activeTab !== tab) setActiveTab(tab);
     };
@@ -80,7 +82,23 @@ const ChecklistApp = ({user}) => {
                                     marginBottom: "0px",
                                 }}
                             >
-                                Assinged Documents
+                                Assigned Documents
+                            </p>
+                        </div>
+                        <div>
+                            <p
+                                className={classnames({ active: activeTab === "4" })}
+                                onClick={() => toggleTab("4")}
+                                style={{
+                                    cursor: "pointer",
+                                    fontWeight: "bold",
+                                    color: "#000",
+                                    padding: "1rem 2rem",
+                                    fontSize: "17px",
+                                    marginBottom: "0px",
+                                }}
+                            >
+                                Receive Documents
                             </p>
                         </div>
                     </Nav>
@@ -91,6 +109,19 @@ const ChecklistApp = ({user}) => {
                         </TabPane>
                         <TabPane tabId="3">
                         <AssignedDocument user={user}/>
+                        </TabPane>
+                        <TabPane tabId="4">
+                            <div className="container my-4">
+                                <div className="row">
+                                    <div className="col-lg-12 col-md-12 col-sm-12 p-4">
+                                        <ReceiveDocumentSection 
+                                            assignedDocuments={assignedDocuments} 
+                                            getUserName={getUserName}
+                                            isModal={false}
+                                        />
+                                    </div>
+                                </div>
+                            </div>
                         </TabPane>
                     </TabContent>
                 </Col>
