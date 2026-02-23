@@ -2,25 +2,25 @@ import React, { useEffect, useState } from "react";
 import { getPdfForm } from "../PdfForms";
 
 const onboardingForms = [
-    { id: 1, code: "1020", name: "Employment Application", type: "Pre-Hire", template: "/forms/employment-application.pdf" },
-    { id: 2, code: "1021", name: "Equal Employment Opportunity", type: "Pre-Hire", template: "/forms/equal-opportunity.pdf" },
-    { id: 3, code: "1050", name: "Skills Checklist", type: "Pre-Hire", template: "/forms/skills-checklist.pdf" },
-    { id: 4, code: "1060", name: "Request for Reference", type: "Pre-Hire", template: "/forms/request-for-reference.pdf" },
-    { id: 5, code: "1070", name: "Background Check Authorization", type: "Pre-Hire", template: "/forms/background-check.pdf" },
-    { id: 6, code: "1204", name: "Care Associate Availability", type: "Pre-Hire", template: "/forms/care-availability.pdf" },
-    { id: 7, code: "1010", name: "Employee Personal Action", type: "Onboarding", template: "/forms/employee-personal-action.pdf" },
-    { id: 8, code: "1201", name: "Handbook Acknowledgement", type: "Onboarding", template: "/forms/handbook-acknowledgment.pdf" },
-    { id: 9, code: "1202", name: "Orientation Acknowledgement", type: "Onboarding", template: "/forms/orientation-acknowledgements.pdf" },
-    { id: 10, code: "1203", name: "Orientation Curriculum", type: "Onboarding", template: "/forms/orientation-curriculum.pdf" },
-    { id: 11, code: "1220", name: "Abuse & Neglect Policy", type: "Onboarding", template: "/forms/abuse-neglect-policy.pdf" },
-    { id: 12, code: "1530", name: "Care Associate Schedule Acknowledgement", type: "Onboarding", template: "/forms/care-schedule-acknowledgement.pdf" },
-    { id: 13, code: "1600", name: "Emergency Contact Information", type: "Onboarding", template: "/forms/emergency-contact.pdf" },
-    { id: 14, code: "1720", name: "Hepatitis B Consent", type: "Onboarding", template: "/forms/hepatitis-b-consent.pdf" },
-    { id: 15, code: "1740", name: "Pre-Employment Drug Consent", type: "Onboarding", template: "/forms/drug-consent.pdf" },
-    { id: 16, code: "2900", name: "ID Agreement", type: "Onboarding", template: "/forms/id-agreement.pdf" },
-    { id: 17, code: "4000", name: "Nondisclosure / Noncompete", type: "Onboarding", template: "/forms/nondisclosure-noncompete.pdf" },
-    { id: 18, code: "I-9", name: "I-9 Employment Eligibility", type: "Onboarding", template: "/forms/i9-form.pdf" },
-    { id: 19, code: "W-4", name: "W-4 Tax Form", type: "Onboarding", template: "/forms/w4-form-2023.pdf" }
+    { id: 1, code: "1020", name: "Employment Application", type: "Pre-Hire", template: "/forms/New%20forms/1020-Employment%20Application_1123.pdf" },
+    { id: 2, code: "1021", name: "Equal Employment Opportunity", type: "Pre-Hire", template: "/forms/New%20forms/1021-Equal%20Employment%20Opportunity%20Data%20Form.pdf" },
+    { id: 3, code: "1050", name: "Skills Checklist", type: "Pre-Hire", template: "/forms/New%20forms/1050-Skills%20Checklist-Associates.pdf" },
+    { id: 4, code: "1060", name: "Request for Reference", type: "Pre-Hire", template: "/forms/New%20forms/1060-Request%20for%20Reference.pdf" },
+    { id: 5, code: "1070", name: "Background Check Authorization", type: "Pre-Hire", template: "/forms/New%20forms/1070-Background%20Check%20Authorization_TX.pdf" },
+    { id: 6, code: "1204", name: "Care Associate Availability", type: "Pre-Hire", template: "/forms/New%20forms/1204-Care%20Associate%20Availability.pdf" },
+    { id: 7, code: "1010", name: "Employee Personal Action", type: "Onboarding", template: "/forms/New%20forms/1010-Employee%20Personal%20Action%20Form%20(EPAF)-TX.pdf" },
+    { id: 8, code: "1201", name: "Handbook Acknowledgement", type: "Onboarding", template: "/forms/New%20forms/1201-Handbook%20Acknowledgment_TX.pdf" },
+    { id: 9, code: "1202", name: "Orientation Acknowledgement", type: "Onboarding", template: "/forms/New%20forms/1202-Orientation%20Acknowledgements.pdf" },
+    { id: 10, code: "1203", name: "Orientation Curriculum", type: "Onboarding", template: "/forms/New%20forms/1203-Orientation%20Curriculum_TX.pdf" },
+    { id: 11, code: "1220", name: "Abuse & Neglect Policy", type: "Onboarding", template: "/forms/New%20forms/1220-Abuse_Neglect%20Policy.pdf" },
+    { id: 12, code: "1530", name: "Care Associate Schedule Acknowledgement", type: "Onboarding", template: "/forms/New%20forms/1530-Care%20Associate%20Schedule%20Acknowledgement.pdf" },
+    { id: 13, code: "1600", name: "Emergency Contact Information", type: "Onboarding", template: "/forms/New%20forms/1600-Emergency%20Contact%20Information.pdf" },
+    { id: 14, code: "1720", name: "Hepatitis B Consent", type: "Onboarding", template: "/forms/New%20forms/1720-Hepatitis%20B_Consent-Declination.pdf" },
+    { id: 15, code: "1740", name: "Pre-Employment Drug Consent", type: "Onboarding", template: "/forms/New%20forms/1740-Pre-Employment%20Drug%20Consent-RVSD.pdf" },
+    { id: 16, code: "2900", name: "ID Agreement", type: "Onboarding", template: "/forms/New%20forms/2900-ID%20Agreement.pdf" },
+    { id: 17, code: "4000", name: "Nondisclosure / Noncompete", type: "Onboarding", template: "/forms/New%20forms/4000-Nondisclosure_Noncompete_TX.pdf" },
+    { id: 18, code: "I-9", name: "I-9 Employment Eligibility", type: "Onboarding", template: "/forms/New%20forms/Revised%20I-9%20(Aug.%202023).pdf" },
+    { id: 19, code: "W-4", name: "W-4 Tax Form", type: "Onboarding", template: "/forms/New%20forms/W-4%202023.pdf" }
 ];
 
 const DocumentList = () => {
